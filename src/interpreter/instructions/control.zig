@@ -1,11 +1,46 @@
 const std = @import("std");
 
 const interpreter = @import("../interpreter.zig");
-const Instruction = interpreter.Instruction;
+const utils = @import("utils.zig");
 const InstructionResult = interpreter.InstructionResult;
 const Interpreter = interpreter.Interpreter;
 
-pub fn jumpdest(_: *Interpreter) !void {}
+pub fn jump(int: *Interpreter) !void {
+    _ = int;
+    // TODO
+}
+
+pub fn jumpi(int: *Interpreter) !void {
+    _ = int;
+    // TODO
+}
+
+pub fn jumpdest(int: *Interpreter) !void {
+    _ = int;
+    // TODO: Gas
+}
+
+fn return_setup(int: *Interpreter) !void {
+    // [0]: offset, [1]: len
+    var x = try int.stack.popn(2);
+    var len = try utils.cast_int(usize, x[1]);
+    if (len != 0) {
+        var offset = try utils.cast_int(usize, x[0]);
+        // TODO: memory resize
+        int.return_offset = offset;
+    }
+    int.return_len = len;
+}
+
+pub fn ret(int: *Interpreter) !void {
+    try return_setup(int);
+    return InstructionResult.Return;
+}
+
+pub fn revert(int: *Interpreter) !void {
+    try return_setup(int);
+    return InstructionResult.Revert;
+}
 
 pub fn pc(int: *Interpreter) !void {
     // - 1 because we have already advanced the instruction pointer in `Interpreter.step`

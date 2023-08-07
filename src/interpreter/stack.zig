@@ -2,6 +2,7 @@ const std = @import("std");
 const expect = std.testing.expect;
 const expectError = std.testing.expectError;
 const debug = std.log.debug;
+const little_endian = @import("builtin").cpu.arch.endian() == .Little;
 
 const InstructionResult = @import("interpreter.zig").InstructionResult;
 
@@ -46,7 +47,7 @@ pub const Stack = struct {
     pub fn pushBeBytes(self: *Stack, bytes: [32]u8) !void {
         var value: u256 = @bitCast(bytes);
         // BE -> LE
-        if (@import("builtin").cpu.arch.endian() == .Little) {
+        if (little_endian) {
             value = @byteSwap(value);
         }
         try self.pushn(1, .{value});

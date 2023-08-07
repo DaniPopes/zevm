@@ -8,18 +8,89 @@ pub const Opcode = @import("opcode.zig").Opcode;
 
 const instructions: [256]Instruction = init: {
     const arithmetic = @import("instructions/arithmetic.zig");
+    const bitwise = @import("instructions/bitwise.zig");
+    const comparison = @import("instructions/comparison.zig");
     const control = @import("instructions/control.zig");
     const stack = @import("instructions/stack.zig");
 
     var map: [256]Instruction = undefined;
-    // TODO
+    // TODO: remaining instructions
     for (0..255) |i| {
         map[i] = switch (@as(Opcode, @enumFromInt(i))) {
             .STOP => control.stop,
 
             .ADD => arithmetic.add,
+            .MUL => arithmetic.mul,
+            .SUB => arithmetic.sub,
+            .DIV => arithmetic.div,
+            .SDIV => arithmetic.sdiv,
+            .MOD => arithmetic.mod,
+            .SMOD => arithmetic.smod,
+            .ADDMOD => arithmetic.addmod,
+            .MULMOD => arithmetic.mulmod,
+            .EXP => arithmetic.exp,
+            .SIGNEXTEND => arithmetic.signextend,
+
+            .LT => comparison.lt,
+            .GT => comparison.gt,
+            .SLT => comparison.slt,
+            .SGT => comparison.sgt,
+            .EQ => comparison.eq,
+            .ISZERO => comparison.iszero,
+            .AND => bitwise.bitand,
+            .OR => bitwise.bitor,
+            .XOR => bitwise.bitxor,
+            .NOT => bitwise.bitnot,
+            .BYTE => bitwise.byte,
+            .SHL => bitwise.shl,
+            .SHR => bitwise.shr,
+            .SAR => bitwise.sar,
+
+            // .KECCAK256 => todo.keccak256,
+
+            // .ADDRESS => todo.address,
+            // .BALANCE => todo.balance,
+            // .ORIGIN => todo.origin,
+            // .CALLER => todo.caller,
+            // .CALLVALUE => todo.callvalue,
+
+            // .CALLDATALOAD => todo.calldataload,
+            // .CALLDATASIZE => todo.calldatasize,
+            // .CALLDATACOPY => todo.calldatacopy,
+            // .CODESIZE => todo.codesize,
+            // .CODECOPY => todo.codecopy,
+
+            // .GASPRICE => todo.gasprice,
+            // .EXTCODESIZE => todo.extcodesize,
+            // .EXTCODECOPY => todo.extcodecopy,
+            // .RETURNDATASIZE => todo.returndatasize,
+            // .RETURNDATACOPY => todo.returndatacopy,
+            // .EXTCODEHASH => todo.extcodehash,
+            // .BLOCKHASH => todo.blockhash,
+            // .COINBASE => todo.coinbase,
+            // .TIMESTAMP => todo.timestamp,
+            // .NUMBER => todo.number,
+            // .DIFFICULTY => todo.difficulty,
+            // .GASLIMIT => todo.gaslimit,
+            // .CHAINID => todo.chainid,
+            // .SELFBALANCE => todo.selfbalance,
+            // .BASEFEE => todo.basefee,
 
             .POP => stack.pop,
+            // .MLOAD => todo.mload,
+            // .MSTORE => todo.mstore,
+            // .MSTORE8 => todo.mstore8,
+            // .SLOAD => todo.sload,
+            // .SSTORE => todo.sstore,
+            .JUMP => control.jump,
+            .JUMPI => control.jumpi,
+            .PC => control.pc,
+            // .MSIZE => todo.msize,
+            // .GAS => todo.gas,
+            .JUMPDEST => control.jumpdest,
+            // .TSTORE => todo.tstore,
+            // .TLOAD => todo.tload,
+            // .MCOPY => todo.mcopy,
 
             .PUSH0 => stack.push(0),
             .PUSH1 => stack.push(1),
@@ -89,7 +160,22 @@ const instructions: [256]Instruction = init: {
             .SWAP15 => stack.swap(15),
             .SWAP16 => stack.swap(16),
 
+            // .LOG0 => todo.log(0),
+            // .LOG1 => todo.log(1),
+            // .LOG2 => todo.log(2),
+            // .LOG3 => todo.log(3),
+            // .LOG4 => todo.log(4),
+
+            // .CREATE => todo.create,
+            // .CALL => todo.call,
+            // .CALLCODE => todo.callcode,
+            .RETURN => control.ret,
+            // .DELEGATECALL => todo.delegatecall,
+            // .CREATE2 => todo.create2,
+            // .STATICCALL => todo.staticcall,
+            .REVERT => control.revert,
             .INVALID => control.invalid,
+            // .SELFDESTRUCT => todo.selfdestruct,
 
             else => control.notFound,
         };
@@ -111,12 +197,24 @@ pub const Interpreter = struct {
     /// The stack.
     stack: Stack,
 
+    // TODO: memory
+
+    /// The offset into `memory` of the return data.
+    ///
+    /// This value must be ignored if `return_len` is 0.
+    return_offset: usize,
+
+    /// The length of the return data.
+    return_len: usize,
+
     /// Creates a new interpreter.
     pub fn new(bytecode: []const u8) Interpreter {
         return .{
             .bytecode = bytecode,
             .ip = bytecode.ptr,
             .stack = Stack.new(),
+            .return_offset = 0,
+            .return_len = 0,
         };
     }
 
