@@ -1,2 +1,7 @@
 zig-cache
 zig-out
+*.ll
+*.s
+*.o
+/main
+/zevm

@@ -1,6 +1,7 @@
-pub const InstructionResult = enum {
+pub const InstructionResult = error{
+    // Continue,
+
     // Success codes
-    Continue,
     Stop,
     Return,
     SelfDestruct,
