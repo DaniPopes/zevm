@@ -54,8 +54,19 @@ pub fn mulmod(int: *Interpreter) !void {
 }
 
 pub fn exp(int: *Interpreter) !void {
-    _ = int;
-    // TODO
+    var x = try int.stack.popTop();
+    // note we're not using `std.math.powi` because we want wrapping behaviour
+    var value = x.value;
+    var exponent = x.top.*;
+    var result: u256 = 1;
+    while (exponent > 1) {
+        if (exponent & 1 == 1) {
+            result *%= value;
+        }
+        exponent >>= 1;
+        value *%= value;
+    }
+    x.top.* = result;
 }
 
 pub fn signextend(int: *Interpreter) !void {

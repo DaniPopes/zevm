@@ -6,6 +6,8 @@ Inspired by [REVM](https://github.com/bluealloy/revm).
 
 ## Usage
 
+Tested with Zig 0.11.0.
+
 - Run:
 ```sh
 zig build run
