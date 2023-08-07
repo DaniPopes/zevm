@@ -173,16 +173,6 @@ pub const Opcode = enum(u8) {
         break :init map;
     };
 
-    /// Bitmap of all valid opcode values.
-    pub const bitmap: u256 = init: {
-        var map = 0;
-        for (@typeInfo(Opcode).Enum.fields) |variant| {
-            var bit = @as(u256, variant.value);
-            map |= 1 << bit;
-        }
-        break :init map;
-    };
-
     /// Returns whether `value` is a valid opcode.
     pub fn isValid(value: u8) bool {
         return Opcode.names[value] != null;
@@ -195,9 +185,6 @@ pub const Opcode = enum(u8) {
 };
 
 test "opcode maps" {
-    var len = @popCount(Opcode.bitmap);
-    try expect(@typeInfo(Opcode).Enum.fields.len == len);
-
     for (Opcode.names, 0..) |name, i| {
         var is_valid = name != null;
         try expect(Opcode.isValid(@intCast(i)) == is_valid);

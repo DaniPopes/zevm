@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const interpreter = @import("root").interpreter;
+const interpreter = @import("../interpreter.zig");
 const Instruction = interpreter.Instruction;
 const InstructionResult = interpreter.InstructionResult;
 const Interpreter = interpreter.Interpreter;

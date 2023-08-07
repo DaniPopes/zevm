@@ -1,5 +1,7 @@
 const std = @import("std");
 const expect = std.testing.expect;
+const expectError = std.testing.expectError;
+const debug = std.log.debug;
 
 const InstructionResult = @import("interpreter.zig").InstructionResult;
 
@@ -42,8 +44,8 @@ pub const Stack = struct {
     /// Pushes a new big-endian byte array onto the stack, or returns `StackOverflow` if the stack
     /// is full.
     pub fn pushBeBytes(self: *Stack, bytes: [32]u8) !void {
-        // BE -> LE
         var value: u256 = @bitCast(bytes);
+        // BE -> LE
         if (@import("builtin").cpu.arch.endian() == .Little) {
             value = @byteSwap(value);
         }
@@ -134,7 +136,7 @@ pub const Stack = struct {
     pub fn dump(self: *Stack) void {
         var i = self.len;
         if (i > 0) {
-            std.log.debug("Stack dump:", .{});
+            debug("Stack dump:", .{});
         }
         while (true) {
             if (i == 0) {
@@ -142,7 +144,7 @@ pub const Stack = struct {
             }
             i -= 1;
             var item = self.data[i];
-            std.log.debug("{: >4}: 0x{x:0>64}", .{ i, item });
+            debug("{: >4}: 0x{x:0>64}", .{ i, item });
         }
     }
 };
@@ -161,7 +163,7 @@ test "stack push and pop" {
     @setEvalBranchQuota(Stack.stack_size);
     try stack.pushn(Stack.stack_size - 1, .{0} ** (Stack.stack_size - 1));
     var data_before = stack.dataSlice();
-    try expect(stack.pushn(1, .{0}) == null);
+    try expectError(InstructionResult.StackOverflow, stack.pushn(1, .{0}));
     var data_after = stack.dataSlice();
     try expect(std.mem.eql(u256, data_after, data_before));
 }
@@ -183,16 +185,16 @@ test "stack top" {
     pop_top.top.* = 43;
     try expect(stack.data[1] == 43);
 
-    var popn_top = try stack.popnTop(2);
-    _ = popn_top;
-    try expect(stack.len == 0);
+    try expectError(InstructionResult.StackUnderflow, stack.popnTop(2));
+    _ = try stack.popnTop(1);
+    try expect(stack.len == 1);
 }
 
 test "stack pop top" {
     var stack = Stack.new();
-    stack.pushn(3, .{ 0, 1, 2 }).?;
+    try stack.pushn(3, .{ 0, 1, 2 });
 
-    var popn_top = stack.popnTop(0).?;
+    var popn_top = try stack.popnTop(0);
     try expect(popn_top.values.len == 0);
-    try expect(popn_top.top == stack.top().?);
+    try expect(popn_top.top == try stack.top());
 }
