@@ -1,7 +1,11 @@
 const std = @import("std");
 const debug = std.log.debug;
+const Allocator = std.mem.Allocator;
 
-const Stack = @import("stack.zig").Stack;
+const utils = @import("utils.zig");
+
+pub const Stack = @import("stack.zig").Stack;
+pub const Memory = @import("memory.zig").Memory;
 
 pub const InstructionResult = @import("result.zig").InstructionResult;
 pub const Opcode = @import("opcode.zig").Opcode;
@@ -11,6 +15,7 @@ const instructions: [256]Instruction = init: {
     const bitwise = @import("instructions/bitwise.zig");
     const comparison = @import("instructions/comparison.zig");
     const control = @import("instructions/control.zig");
+    const memory = @import("instructions/memory.zig");
     const stack = @import("instructions/stack.zig");
 
     var map: [256]Instruction = undefined;
@@ -18,7 +23,6 @@ const instructions: [256]Instruction = init: {
     for (0..255) |i| {
         map[i] = switch (@as(Opcode, @enumFromInt(i))) {
             .STOP => control.stop,
-
             .ADD => arithmetic.add,
             .MUL => arithmetic.mul,
             .SUB => arithmetic.sub,
@@ -53,19 +57,18 @@ const instructions: [256]Instruction = init: {
             // .ORIGIN => todo.origin,
             // .CALLER => todo.caller,
             // .CALLVALUE => todo.callvalue,
-
             // .CALLDATALOAD => todo.calldataload,
             // .CALLDATASIZE => todo.calldatasize,
             // .CALLDATACOPY => todo.calldatacopy,
             // .CODESIZE => todo.codesize,
             // .CODECOPY => todo.codecopy,
-
             // .GASPRICE => todo.gasprice,
             // .EXTCODESIZE => todo.extcodesize,
             // .EXTCODECOPY => todo.extcodecopy,
             // .RETURNDATASIZE => todo.returndatasize,
             // .RETURNDATACOPY => todo.returndatacopy,
             // .EXTCODEHASH => todo.extcodehash,
+
             // .BLOCKHASH => todo.blockhash,
             // .COINBASE => todo.coinbase,
             // .TIMESTAMP => todo.timestamp,
@@ -77,20 +80,20 @@ const instructions: [256]Instruction = init: {
             // .BASEFEE => todo.basefee,
 
             .POP => stack.pop,
-            // .MLOAD => todo.mload,
-            // .MSTORE => todo.mstore,
-            // .MSTORE8 => todo.mstore8,
+            .MLOAD => memory.mload,
+            .MSTORE => memory.mstore,
+            .MSTORE8 => memory.mstore8,
             // .SLOAD => todo.sload,
             // .SSTORE => todo.sstore,
             .JUMP => control.jump,
             .JUMPI => control.jumpi,
             .PC => control.pc,
-            // .MSIZE => todo.msize,
+            .MSIZE => memory.msize,
             // .GAS => todo.gas,
             .JUMPDEST => control.jumpdest,
             // .TSTORE => todo.tstore,
             // .TLOAD => todo.tload,
-            // .MCOPY => todo.mcopy,
+            .MCOPY => memory.mcopy,
 
             .PUSH0 => stack.push(0),
             .PUSH1 => stack.push(1),
@@ -166,6 +169,19 @@ const instructions: [256]Instruction = init: {
             // .LOG3 => todo.log(3),
             // .LOG4 => todo.log(4),
 
+            // .RJUMP => todo.rjump,
+            // .RJUMPI => todo.rjumpi,
+            // .RJUMPV => todo.rjumpv,
+            // .CALLF => todo.callf,
+            // .RETF => todo.retf,
+
+            // .DUPN => todo.dupn,
+            // .SWAPN => todo.swapn,
+            // .DATALOAD => todo.dataload,
+            // .DATALOADN => todo.dataloadn,
+            // .DATASIZE => todo.datasize,
+            // .DATACOPY => todo.datacopy,
+
             // .CREATE => todo.create,
             // .CALL => todo.call,
             // .CALLCODE => todo.callcode,
@@ -190,32 +206,33 @@ pub const Instruction = *const fn (*Interpreter) InstructionResult!void;
 pub const Interpreter = struct {
     /// The bytecode slice.
     bytecode: []const u8,
-
     /// The current instruction pointer. This always points into `bytecode`.
     ip: [*]const u8,
-
     /// The stack.
     stack: Stack,
-
-    // TODO: memory
-
+    /// The memory.
+    memory: Memory,
     /// The offset into `memory` of the return data.
     ///
     /// This value must be ignored if `return_len` is 0.
     return_offset: usize,
-
     /// The length of the return data.
     return_len: usize,
 
     /// Creates a new interpreter.
-    pub fn new(bytecode: []const u8) Interpreter {
+    pub fn init(bytecode: []const u8, allocator: Allocator) Allocator.Error!Interpreter {
         return .{
             .bytecode = bytecode,
             .ip = bytecode.ptr,
-            .stack = Stack.new(),
+            .stack = Stack.init(),
+            .memory = try Memory.init(allocator),
             .return_offset = 0,
             .return_len = 0,
         };
+    }
+
+    pub fn deinit(self: *Interpreter) void {
+        self.memory.deinit();
     }
 
     /// Returns the current program counter.
@@ -243,11 +260,14 @@ pub const Interpreter = struct {
         var opcode = self.nextByte();
         if (std.log.defaultLogEnabled(.debug)) {
             var as_enum = @as(Opcode, @enumFromInt(opcode));
-            debug("{: >4}: {} (0x{X:0>2})", .{ self.pc(), as_enum, opcode });
+
+            var data_: []const u8 = ([0]u8{})[0..];
+            if (as_enum.isPush()) |n| data_ = self.ip[0..n];
+            var data = std.fmt.fmtSliceHexLower(data_);
+
+            debug("{: >4}: 0x{X:0>2} {s} {}", .{ self.pc(), opcode, @tagName(as_enum), data });
         }
-        if (!self.inBounds(null)) {
-            return InstructionResult.OutOfOffset;
-        }
+        if (!self.inBounds(null)) return InstructionResult.OutOfOffset;
         return instructions[opcode](self);
     }
 
@@ -256,6 +276,18 @@ pub const Interpreter = struct {
         var ip = @intFromPtr(iptr orelse self.ip);
         var start = @intFromPtr(self.bytecode.ptr);
         return ip >= start and ip <= start + self.bytecode.len;
+    }
+
+    /// Returns the slice of the return value.
+    pub fn returnValue(self: *Interpreter) []u8 {
+        if (self.return_len == 0) return &[0]u8{};
+        return self.memory.getSlice(self.return_offset, self.return_len);
+    }
+
+    pub fn dumpReturnValue(self: *Interpreter) void {
+        if (self.return_len == 0) return;
+        debug("Return value:", .{});
+        utils.dumpSlice(self.returnValue());
     }
 
     /// Returns the next byte and advances the instruction pointer by one.
@@ -269,4 +301,22 @@ pub const Interpreter = struct {
         self.ip += n;
         return value;
     }
+
+    pub fn memResize(self: *Interpreter, offset: usize, len: usize) !void {
+        var new_len = next32(offset +| len) catch return InstructionResult.MemoryOOG;
+        // TODO: memory limit
+        if (new_len > self.memory.len) {
+            // TODO: gas
+            self.memory.resize(new_len) catch @panic("OOM");
+        }
+    }
 };
+
+fn next32(x: usize) !usize {
+    var r = x;
+    r &= 31;
+    r +%= 1;
+    r = ~r;
+    r &= 31;
+    return std.math.add(usize, x, r);
+}

@@ -4,7 +4,6 @@ const expect = std.testing.expect;
 /// EVM opcodes.
 pub const Opcode = enum(u8) {
     STOP = 0x00,
-
     ADD = 0x01,
     MUL = 0x02,
     SUB = 0x03,
@@ -39,19 +38,18 @@ pub const Opcode = enum(u8) {
     ORIGIN = 0x32,
     CALLER = 0x33,
     CALLVALUE = 0x34,
-
     CALLDATALOAD = 0x35,
     CALLDATASIZE = 0x36,
     CALLDATACOPY = 0x37,
     CODESIZE = 0x38,
     CODECOPY = 0x39,
-
     GASPRICE = 0x3A,
     EXTCODESIZE = 0x3B,
     EXTCODECOPY = 0x3C,
     RETURNDATASIZE = 0x3D,
     RETURNDATACOPY = 0x3E,
     EXTCODEHASH = 0x3F,
+
     BLOCKHASH = 0x40,
     COINBASE = 0x41,
     TIMESTAMP = 0x42,
@@ -152,6 +150,19 @@ pub const Opcode = enum(u8) {
     LOG3 = 0xA3,
     LOG4 = 0xA4,
 
+    RJUMP = 0xE0,
+    RJUMPI = 0xE1,
+    RJUMPV = 0xE2,
+    CALLF = 0xE3,
+    RETF = 0xE4,
+
+    DUPN = 0xE6,
+    SWAPN = 0xE7,
+    DATALOAD = 0xE8,
+    DATALOADN = 0xE9,
+    DATASIZE = 0xEa,
+    DATACOPY = 0xEb,
+
     CREATE = 0xF0,
     CALL = 0xF1,
     CALLCODE = 0xF2,
@@ -182,6 +193,17 @@ pub const Opcode = enum(u8) {
     pub fn name(self: Opcode) []const u8 {
         return Opcode.names[@intFromEnum(self)].?;
     }
+
+    /// Returns the number of bytes of this push opcode, or `null`.
+    pub fn isPush(self: Opcode) ?u8 {
+        const p0: u8 = @intFromEnum(Opcode.PUSH0);
+        const p32: u8 = @intFromEnum(Opcode.PUSH32);
+        var this: u8 = @intFromEnum(self);
+        return switch (this) {
+            p0...p32 => this - p0,
+            else => null,
+        };
+    }
 };
 
 test "opcode maps" {
@@ -192,4 +214,42 @@ test "opcode maps" {
             try expect(std.mem.eql(u8, Opcode.name(@enumFromInt(i)), name.?));
         }
     }
+}
+
+test "opcode isPush" {
+    try expect(Opcode.MCOPY.isPush() == null);
+    try expect(Opcode.PUSH0.isPush().? == 0);
+    try expect(Opcode.PUSH1.isPush().? == 1);
+    try expect(Opcode.PUSH2.isPush().? == 2);
+    try expect(Opcode.PUSH3.isPush().? == 3);
+    try expect(Opcode.PUSH4.isPush().? == 4);
+    try expect(Opcode.PUSH5.isPush().? == 5);
+    try expect(Opcode.PUSH6.isPush().? == 6);
+    try expect(Opcode.PUSH7.isPush().? == 7);
+    try expect(Opcode.PUSH8.isPush().? == 8);
+    try expect(Opcode.PUSH9.isPush().? == 9);
+    try expect(Opcode.PUSH10.isPush().? == 10);
+    try expect(Opcode.PUSH11.isPush().? == 11);
+    try expect(Opcode.PUSH12.isPush().? == 12);
+    try expect(Opcode.PUSH13.isPush().? == 13);
+    try expect(Opcode.PUSH14.isPush().? == 14);
+    try expect(Opcode.PUSH15.isPush().? == 15);
+    try expect(Opcode.PUSH16.isPush().? == 16);
+    try expect(Opcode.PUSH17.isPush().? == 17);
+    try expect(Opcode.PUSH18.isPush().? == 18);
+    try expect(Opcode.PUSH19.isPush().? == 19);
+    try expect(Opcode.PUSH20.isPush().? == 20);
+    try expect(Opcode.PUSH21.isPush().? == 21);
+    try expect(Opcode.PUSH22.isPush().? == 22);
+    try expect(Opcode.PUSH23.isPush().? == 23);
+    try expect(Opcode.PUSH24.isPush().? == 24);
+    try expect(Opcode.PUSH25.isPush().? == 25);
+    try expect(Opcode.PUSH26.isPush().? == 26);
+    try expect(Opcode.PUSH27.isPush().? == 27);
+    try expect(Opcode.PUSH28.isPush().? == 28);
+    try expect(Opcode.PUSH29.isPush().? == 29);
+    try expect(Opcode.PUSH30.isPush().? == 30);
+    try expect(Opcode.PUSH31.isPush().? == 31);
+    try expect(Opcode.PUSH32.isPush().? == 32);
+    try expect(Opcode.DUP1.isPush() == null);
 }

@@ -28,7 +28,7 @@ pub fn bitnot(int: *Interpreter) !void {
 
 pub fn byte(int: *Interpreter) !void {
     var x = try int.stack.popTop();
-    var byte_idx = utils.cast_saturate(usize, x.value);
+    var byte_idx = utils.castSaturate(usize, x.value);
     if (byte_idx < 32) {
         var bytes = @as(*[32]u8, @ptrCast(x.top));
         // `byte` uses big-endian
