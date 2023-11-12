@@ -20,5 +20,5 @@ zig build test
 
 - Emit LLVM-IR and ASM:
 ```sh
-zig build -OReleaseFast -fstrip -femit-asm -femit-llvm-ir src/main.zig
+zig build-exe -OReleaseFast -fstrip -femit-asm -femit-llvm-ir -lc src/main.zig
 ```

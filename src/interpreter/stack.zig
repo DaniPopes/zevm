@@ -104,14 +104,14 @@ pub const Stack = struct {
     }
 
     /// Duplicates the `N`th value from the top of the stack.
-    pub fn dup(self: *Stack, comptime n: usize) !void {
+    pub inline fn dup(self: *Stack, comptime n: usize) !void {
         var len = self.len;
         if (len < n) return InstructionResult.StackUnderflow;
         return self.push(self.data[len - n]);
     }
 
     /// Swaps the topmost value with the `N`th value from the top.
-    pub fn swap(self: *Stack, comptime n: usize) !void {
+    pub inline fn swap(self: *Stack, comptime n: usize) !void {
         var len = self.len;
         if (len <= n) return InstructionResult.StackUnderflow;
         var last = len - 1;
