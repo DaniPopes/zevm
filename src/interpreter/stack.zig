@@ -89,7 +89,7 @@ pub const Stack = struct {
     /// Removes the topmost element from the stack and returns it, along with the new topmost
     /// element.
     pub fn popTop(self: *Stack) !PopTop {
-        var x = try self.popnTop(1);
+        const x = try self.popnTop(1);
         return .{ .value = x.values[0], .top = x.top };
     }
 
@@ -105,16 +105,16 @@ pub const Stack = struct {
 
     /// Duplicates the `N`th value from the top of the stack.
     pub inline fn dup(self: *Stack, comptime n: usize) !void {
-        var len = self.len;
+        const len = self.len;
         if (len < n) return InstructionResult.StackUnderflow;
         return self.push(self.data[len - n]);
     }
 
     /// Swaps the topmost value with the `N`th value from the top.
     pub inline fn swap(self: *Stack, comptime n: usize) !void {
-        var len = self.len;
+        const len = self.len;
         if (len <= n) return InstructionResult.StackUnderflow;
-        var last = len - 1;
+        const last = len - 1;
         std.mem.swap(u256, &self.data[last], &self.data[last - n]);
     }
 
@@ -124,7 +124,7 @@ pub const Stack = struct {
         var i = self.len;
         while (i > 0) {
             i -= 1;
-            var item = self.data[i];
+            const item = self.data[i];
             debug("{: >4}: 0x{x:0>64}", .{ i, item });
         }
     }
@@ -153,13 +153,13 @@ test "stack top" {
     var stack = Stack.init();
     try stack.pushn(3, .{ 0, 1, 2 });
 
-    var top = try stack.top();
+    const top = try stack.top();
     try expect(stack.len == 3);
     try expect(top.* == 2);
     top.* = 42;
     try expect(stack.data[2] == 42);
 
-    var pop_top = try stack.popTop();
+    const pop_top = try stack.popTop();
     try expect(stack.len == 2);
     try expect(pop_top.value == 42);
     try expect(pop_top.top.* == 1);
@@ -175,7 +175,7 @@ test "stack pop top" {
     var stack = Stack.init();
     try stack.pushn(3, .{ 0, 1, 2 });
 
-    var popn_top = try stack.popnTop(0);
+    const popn_top = try stack.popnTop(0);
     try expect(popn_top.values.len == 0);
     try expect(popn_top.top == try stack.top());
 }

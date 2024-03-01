@@ -243,7 +243,7 @@ pub const Interpreter = struct {
     /// Runs the instruction loop until completion.
     pub fn run(self: *Interpreter) InstructionResult {
         var c: usize = 0;
-        var res = while (true) {
+        const res = while (true) {
             if (c > 10000) {
                 std.log.warn("execution taking too long, breaking", .{});
                 break InstructionResult.OutOfGas;
@@ -257,13 +257,13 @@ pub const Interpreter = struct {
 
     /// Evaluates the instruction located at the current instruction pointer.
     pub fn step(self: *Interpreter) !void {
-        var opcode = self.nextByte();
+        const opcode = self.nextByte();
         if (std.log.defaultLogEnabled(.debug)) {
             var as_enum = @as(Opcode, @enumFromInt(opcode));
 
             var data_: []const u8 = ([0]u8{})[0..];
             if (as_enum.isPush()) |n| data_ = self.ip[0..n];
-            var data = std.fmt.fmtSliceHexLower(data_);
+            const data = std.fmt.fmtSliceHexLower(data_);
 
             debug("{: >4}: 0x{X:0>2} {s} {}", .{ self.pc(), opcode, @tagName(as_enum), data });
         }
@@ -273,8 +273,8 @@ pub const Interpreter = struct {
 
     /// Checks if the instruction pointer is in bounds of `bytecode`.
     pub fn inBounds(self: *Interpreter, iptr: ?[*]const u8) bool {
-        var ip = @intFromPtr(iptr orelse self.ip);
-        var start = @intFromPtr(self.bytecode.ptr);
+        const ip = @intFromPtr(iptr orelse self.ip);
+        const start = @intFromPtr(self.bytecode.ptr);
         return ip >= start and ip <= start + self.bytecode.len;
     }
 
@@ -297,13 +297,13 @@ pub const Interpreter = struct {
 
     /// Returns a pointer to the next `n` bytes and advances the instruction pointer by `n`.
     pub fn nextByteSlice(self: *Interpreter, comptime n: usize) *const [n]u8 {
-        var value = self.ip[0..n];
+        const value = self.ip[0..n];
         self.ip += n;
         return value;
     }
 
     pub fn memResize(self: *Interpreter, offset: usize, len: usize) !void {
-        var new_len = next32(offset +| len) catch return InstructionResult.MemoryOOG;
+        const new_len = next32(offset +| len) catch return InstructionResult.MemoryOOG;
         // TODO: memory limit
         if (new_len > self.memory.len) {
             // TODO: gas

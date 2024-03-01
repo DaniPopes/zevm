@@ -198,7 +198,7 @@ pub const Opcode = enum(u8) {
     pub fn isPush(self: Opcode) ?u8 {
         const p0: u8 = @intFromEnum(Opcode.PUSH0);
         const p32: u8 = @intFromEnum(Opcode.PUSH32);
-        var this: u8 = @intFromEnum(self);
+        const this: u8 = @intFromEnum(self);
         return switch (this) {
             p0...p32 => this - p0,
             else => null,
@@ -208,7 +208,7 @@ pub const Opcode = enum(u8) {
 
 test "opcode maps" {
     for (Opcode.names, 0..) |name, i| {
-        var is_valid = name != null;
+        const is_valid = name != null;
         try expect(Opcode.isValid(@intCast(i)) == is_valid);
         if (is_valid) {
             try expect(std.mem.eql(u8, Opcode.name(@enumFromInt(i)), name.?));

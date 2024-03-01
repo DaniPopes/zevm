@@ -19,7 +19,7 @@ pub const Memory = struct {
 
     /// Creates a new Memory object with the initial capacity allocation.
     pub fn init(allocator: Allocator) Allocator.Error!Memory {
-        var x = try allocator.alloc(u8, page_size);
+        const x = try allocator.alloc(u8, page_size);
         assert(x.len == page_size);
         // @memset(x, 0);
         return .{
@@ -112,7 +112,7 @@ pub const Memory = struct {
             }
         }
 
-        var new_data = try self.allocator.realloc(self.rawData(), new_capacity);
+        const new_data = try self.allocator.realloc(self.rawData(), new_capacity);
         // @memset(new_data, 0);
         self.ptr = new_data.ptr;
         self.capacity = new_data.len;

@@ -5,22 +5,22 @@ const InstructionResult = interpreter.InstructionResult;
 const Interpreter = interpreter.Interpreter;
 
 pub fn add(int: *Interpreter) !void {
-    var x = try int.stack.popTop();
+    const x = try int.stack.popTop();
     x.top.* = x.value +% x.top.*;
 }
 
 pub fn mul(int: *Interpreter) !void {
-    var x = try int.stack.popTop();
+    const x = try int.stack.popTop();
     x.top.* = x.value *% x.top.*;
 }
 
 pub fn sub(int: *Interpreter) !void {
-    var x = try int.stack.popTop();
+    const x = try int.stack.popTop();
     x.top.* = x.value -% x.top.*;
 }
 
 pub fn div(int: *Interpreter) !void {
-    var x = try int.stack.popTop();
+    const x = try int.stack.popTop();
     if (x.top.* != 0) {
         x.top.* = x.value / x.top.*;
     }
@@ -32,7 +32,7 @@ pub fn sdiv(int: *Interpreter) !void {
 }
 
 pub fn mod(int: *Interpreter) !void {
-    var x = try int.stack.popTop();
+    const x = try int.stack.popTop();
     if (x.top.* != 0) {
         x.top.* = x.value % x.top.*;
     }
@@ -54,7 +54,7 @@ pub fn mulmod(int: *Interpreter) !void {
 }
 
 pub fn exp(int: *Interpreter) !void {
-    var x = try int.stack.popTop();
+    const x = try int.stack.popTop();
     // note we're not using `std.math.powi` because we want wrapping behaviour
     var value = x.value;
     var exponent = x.top.*;

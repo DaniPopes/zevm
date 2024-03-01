@@ -5,12 +5,12 @@ const InstructionResult = interpreter.InstructionResult;
 const Interpreter = interpreter.Interpreter;
 
 pub fn lt(int: *Interpreter) !void {
-    var x = try int.stack.popTop();
+    const x = try int.stack.popTop();
     x.top.* = @intFromBool(x.value < x.top.*);
 }
 
 pub fn gt(int: *Interpreter) !void {
-    var x = try int.stack.popTop();
+    const x = try int.stack.popTop();
     x.top.* = @intFromBool(x.value > x.top.*);
 }
 
@@ -25,11 +25,11 @@ pub fn sgt(int: *Interpreter) !void {
 }
 
 pub fn eq(int: *Interpreter) !void {
-    var x = try int.stack.popTop();
+    const x = try int.stack.popTop();
     x.top.* = @intFromBool(x.value == x.top.*);
 }
 
 pub fn iszero(int: *Interpreter) !void {
-    var top = try int.stack.top();
+    const top = try int.stack.top();
     top.* = @intFromBool(top.* == 0);
 }
