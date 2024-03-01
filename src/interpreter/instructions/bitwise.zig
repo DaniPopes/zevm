@@ -1,5 +1,5 @@
 const std = @import("std");
-const little_endian = @import("builtin").cpu.arch.endian() == .Little;
+const little_endian = @import("builtin").cpu.arch.endian() == .little;
 
 const interpreter = @import("../interpreter.zig");
 const utils = @import("utils.zig");
