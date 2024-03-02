@@ -12,6 +12,9 @@ pub const Memory = @import("Memory.zig");
 pub const InstructionResult = @import("result.zig").InstructionResult;
 pub const Opcode = @import("opcode.zig").Opcode;
 
+/// The instruction function type.
+pub const Instruction = *const fn (*Self) InstructionResult!void;
+
 const instructions: [256]Instruction = init: {
     const arithmetic = @import("instructions/arithmetic.zig");
     const bitwise = @import("instructions/bitwise.zig");
@@ -205,9 +208,6 @@ const instructions: [256]Instruction = init: {
     break :init map;
 };
 
-/// The instruction function type.
-pub const Instruction = *const fn (*Self) InstructionResult!void;
-
 /// The bytecode slice.
 bytecode: []const u8,
 /// The current instruction pointer. This always points into `bytecode`.
@@ -226,7 +226,11 @@ return_len: usize,
 const Self = @This();
 
 /// Creates a new interpreter.
-pub fn init(bytecode: []const u8, allocator: Allocator) Allocator.Error!Self {
+pub fn init(bytecode: []const u8, allocator: Allocator) !Self {
+    if (bytecode.len == 0) {
+        return error.EmptyBytecode;
+    }
+
     return .{
         .bytecode = bytecode,
         .ip = bytecode.ptr,
@@ -282,6 +286,11 @@ pub fn inBounds(self: *Self, iptr: ?[*]const u8) bool {
     const ip = @intFromPtr(iptr orelse self.ip);
     const start = @intFromPtr(self.bytecode.ptr);
     return ip >= start and ip <= start + self.bytecode.len;
+}
+
+/// Returns `true` if the given pointer is a valid jump destination.
+pub fn isValidJump(self: *Self, iptr: [*]const u8) bool {
+    return self.inBounds(iptr) and iptr[0] == @intFromEnum(Opcode.JUMPDEST);
 }
 
 /// Returns the slice of the return value.

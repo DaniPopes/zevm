@@ -101,7 +101,7 @@ pub fn copy(self: *Self, dst: usize, src: usize, len: usize) void {
 
 pub fn dump(self: *Self) void {
     if (self.len == 0) return;
-    std.log.debug("Self:", .{});
+    std.log.debug("Stack:", .{});
     utils.dumpSlice(self.data());
 }
 

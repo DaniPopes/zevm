@@ -119,7 +119,7 @@ pub inline fn swap(self: *Self, n: usize) !void {
 
 pub fn dump(self: *Self) void {
     if (self.len == 0) return;
-    debug("Self:", .{});
+    debug("Stack:", .{});
     var i = self.len;
     while (i > 0) {
         i -= 1;
