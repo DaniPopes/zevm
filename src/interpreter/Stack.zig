@@ -7,7 +7,7 @@ const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
 const expectError = std.testing.expectError;
 
-const InstructionResult = @import("interpreter.zig").InstructionResult;
+const InstructionResult = @import("Interpreter.zig").InstructionResult;
 
 /// The stack's data.
 data: [capacity]u256,
@@ -139,7 +139,7 @@ test "stack push and pop" {
     try expectEqualSlices(u256, &try stack.popn(2), &[_]u256{ 1, 0 });
     try expectEqual(stack.len, 0);
 
-    @setEvalBranchQuota(Self.capacity);
+    @setEvalBranchQuota(Self.capacity + 100);
     try stack.pushn(Self.capacity, .{0} ** Self.capacity);
     try expectEqual(stack.len, Self.capacity);
 

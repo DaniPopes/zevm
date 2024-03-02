@@ -1,8 +1,7 @@
 const std = @import("std");
 
-const interpreter = @import("../interpreter.zig");
-const InstructionResult = interpreter.InstructionResult;
-const Interpreter = interpreter.Interpreter;
+const Interpreter = @import("../Interpreter.zig");
+const InstructionResult = Interpreter.InstructionResult;
 
 pub fn lt(int: *Interpreter) !void {
     const value, const top = try int.stack.popTop();

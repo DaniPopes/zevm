@@ -1,9 +1,8 @@
 const std = @import("std");
 
-const interpreter = @import("../interpreter.zig");
+const Interpreter = @import("../Interpreter.zig");
 const utils = @import("utils.zig");
-const InstructionResult = interpreter.InstructionResult;
-const Interpreter = interpreter.Interpreter;
+const InstructionResult = Interpreter.InstructionResult;
 
 pub fn jump(int: *Interpreter) !void {
     _ = int;

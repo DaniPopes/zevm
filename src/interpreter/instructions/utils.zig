@@ -1,8 +1,8 @@
 const std = @import("std");
 const expectEqualSlices = std.testing.expectEqualSlices;
 
-const interpreter = @import("../interpreter.zig");
-const InstructionResult = interpreter.InstructionResult;
+const Interpreter = @import("../Interpreter.zig");
+const InstructionResult = Interpreter.InstructionResult;
 
 pub const KECCAK_EMPTY: [32]u8 = decodeHex(32, "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470".*);
 

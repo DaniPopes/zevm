@@ -1,9 +1,8 @@
 const std = @import("std");
 
-const interpreter = @import("../interpreter.zig");
-const Instruction = interpreter.Instruction;
-const InstructionResult = interpreter.InstructionResult;
-const Interpreter = interpreter.Interpreter;
+const Interpreter = @import("../Interpreter.zig");
+const Instruction = Interpreter.Instruction;
+const InstructionResult = Interpreter.InstructionResult;
 const utils = @import("utils.zig");
 
 pub fn pop(int: *Interpreter) !void {

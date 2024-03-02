@@ -1,10 +1,9 @@
 const std = @import("std");
 const little_endian = @import("builtin").cpu.arch.endian() == .little;
 
-const interpreter = @import("../interpreter.zig");
+const Interpreter = @import("../Interpreter.zig");
 const utils = @import("utils.zig");
-const InstructionResult = interpreter.InstructionResult;
-const Interpreter = interpreter.Interpreter;
+const InstructionResult = Interpreter.InstructionResult;
 
 pub fn bitand(int: *Interpreter) !void {
     const value, const top = try int.stack.popTop();

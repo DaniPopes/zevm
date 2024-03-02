@@ -1,9 +1,8 @@
 const std = @import("std");
 
 const utils = @import("utils.zig");
-const interpreter = @import("../interpreter.zig");
-const InstructionResult = interpreter.InstructionResult;
-const Interpreter = interpreter.Interpreter;
+const Interpreter = @import("../Interpreter.zig");
+const InstructionResult = Interpreter.InstructionResult;
 
 pub fn keccak256(int: *Interpreter) !void {
     const offset_, const len_ = try int.stack.popn(2);

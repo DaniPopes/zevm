@@ -1,7 +1,7 @@
 const std = @import("std");
 
-pub const interpreter = @import("interpreter/interpreter.zig");
-const Opcode = interpreter.Opcode;
+pub const Interpreter = @import("interpreter/Interpreter.zig");
+const Opcode = Interpreter.Opcode;
 
 const std_options = struct {
     pub const log_level = .debug;
@@ -16,7 +16,7 @@ pub fn main() !void {
         op(.ADD),
         op(.STOP),
     };
-    var int = try interpreter.Interpreter.init(bytecode[0..], std.heap.c_allocator);
+    var int = try Interpreter.init(bytecode[0..], std.heap.c_allocator);
     defer int.deinit();
     _ = int.run() catch {};
     int.dumpReturnValue();
