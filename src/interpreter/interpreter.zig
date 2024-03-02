@@ -4,8 +4,8 @@ const Allocator = std.mem.Allocator;
 
 const utils = @import("utils.zig");
 
-pub const Stack = @import("stack.zig").Stack;
-pub const Memory = @import("memory.zig").Memory;
+pub const Stack = @import("Stack.zig");
+pub const Memory = @import("Memory.zig");
 
 pub const InstructionResult = @import("result.zig").InstructionResult;
 pub const Opcode = @import("opcode.zig").Opcode;
@@ -15,6 +15,7 @@ const instructions: [256]Instruction = init: {
     const bitwise = @import("instructions/bitwise.zig");
     const comparison = @import("instructions/comparison.zig");
     const control = @import("instructions/control.zig");
+    const hash = @import("instructions/hash.zig");
     const memory = @import("instructions/memory.zig");
     const stack = @import("instructions/stack.zig");
 
@@ -23,6 +24,7 @@ const instructions: [256]Instruction = init: {
     for (0..255) |i| {
         map[i] = switch (@as(Opcode, @enumFromInt(i))) {
             .STOP => control.stop,
+
             .ADD => arithmetic.add,
             .MUL => arithmetic.mul,
             .SUB => arithmetic.sub,
@@ -50,7 +52,7 @@ const instructions: [256]Instruction = init: {
             .SHR => bitwise.shr,
             .SAR => bitwise.sar,
 
-            // .KECCAK256 => todo.keccak256,
+            .KECCAK256 => hash.keccak256,
 
             // .ADDRESS => todo.address,
             // .BALANCE => todo.balance,
@@ -78,6 +80,8 @@ const instructions: [256]Instruction = init: {
             // .CHAINID => todo.chainid,
             // .SELFBALANCE => todo.selfbalance,
             // .BASEFEE => todo.basefee,
+            // .BLOBHASH = todo.blobhash,
+            // .BLOBBASEFEE = todo.blobbasefee,
 
             .POP => stack.pop,
             .MLOAD => memory.mload,
@@ -175,8 +179,8 @@ const instructions: [256]Instruction = init: {
             // .CALLF => todo.callf,
             // .RETF => todo.retf,
 
-            // .DUPN => todo.dupn,
-            // .SWAPN => todo.swapn,
+            // .DUPN => stack.dupn,
+            // .SWAPN => stack.swapn,
             // .DATALOAD => todo.dataload,
             // .DATALOADN => todo.dataloadn,
             // .DATASIZE => todo.datasize,

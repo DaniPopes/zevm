@@ -21,11 +21,10 @@ pub fn jumpdest(int: *Interpreter) !void {
 }
 
 fn return_setup(int: *Interpreter) !void {
-    // [0]: offset, [1]: len
-    const x = try int.stack.popn(2);
-    const len = try utils.castInt(usize, x[1]);
+    const offset_, const len_ = try int.stack.popn(2);
+    const len = try utils.castInt(usize, len_);
     if (len != 0) {
-        const offset = try utils.castInt(usize, x[0]);
+        const offset = try utils.castInt(usize, offset_);
         try int.memResize(offset, len);
         int.return_offset = offset;
     }

@@ -7,18 +7,18 @@ const InstructionResult = interpreter.InstructionResult;
 const Interpreter = interpreter.Interpreter;
 
 pub fn bitand(int: *Interpreter) !void {
-    const x = try int.stack.popTop();
-    x.top.* = x.value & x.top.*;
+    const value, const top = try int.stack.popTop();
+    top.* = value & top.*;
 }
 
 pub fn bitor(int: *Interpreter) !void {
-    const x = try int.stack.popTop();
-    x.top.* = x.value | x.top.*;
+    const value, const top = try int.stack.popTop();
+    top.* = value | top.*;
 }
 
 pub fn bitxor(int: *Interpreter) !void {
-    const x = try int.stack.popTop();
-    x.top.* = x.value ^ x.top.*;
+    const value, const top = try int.stack.popTop();
+    top.* = value ^ top.*;
 }
 
 pub fn bitnot(int: *Interpreter) !void {
@@ -27,39 +27,44 @@ pub fn bitnot(int: *Interpreter) !void {
 }
 
 pub fn byte(int: *Interpreter) !void {
-    const x = try int.stack.popTop();
-    var byte_idx = utils.castSaturate(usize, x.value);
+    const value, const top = try int.stack.popTop();
+    var byte_idx = utils.castSaturate(usize, value);
     if (byte_idx < 32) {
-        const bytes = @as(*[32]u8, @ptrCast(x.top));
+        const bytes = @as(*[32]u8, @ptrCast(top));
         // `byte` uses big-endian
         if (little_endian) {
             byte_idx = 31 - byte_idx;
         }
-        x.top.* = bytes[byte_idx];
+        top.* = bytes[byte_idx];
     } else {
-        x.top.* = 0;
+        top.* = 0;
     }
 }
 
 pub fn shl(int: *Interpreter) !void {
-    const x = try int.stack.popTop();
-    if (x.top.* < 256) {
-        x.top.* = x.value << @as(u8, @intCast(x.top.*));
+    const value, const top = try int.stack.popTop();
+    if (top.* < 256) {
+        top.* = value << @as(u8, @intCast(top.*));
     } else {
-        x.top.* = 0;
+        top.* = 0;
     }
 }
 
 pub fn shr(int: *Interpreter) !void {
-    const x = try int.stack.popTop();
-    if (x.top.* < 256) {
-        x.top.* = x.value >> @as(u8, @intCast(x.top.*));
+    const value, const top = try int.stack.popTop();
+    if (top.* < 256) {
+        top.* = value >> @as(u8, @intCast(top.*));
     } else {
-        x.top.* = 0;
+        top.* = 0;
     }
 }
 
 pub fn sar(int: *Interpreter) !void {
-    _ = int;
-    // TODO
+    const value_, const top = try int.stack.popTop();
+    const value = @as(i256, @bitCast(value_));
+    if (top.* < 256) {
+        top.* = @bitCast(value >> @as(u8, @intCast(top.*)));
+    } else {
+        top.* = if (value < 0) std.math.maxInt(u256) else 0;
+    }
 }

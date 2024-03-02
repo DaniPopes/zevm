@@ -4,6 +4,7 @@ const interpreter = @import("../interpreter.zig");
 const Instruction = interpreter.Instruction;
 const InstructionResult = interpreter.InstructionResult;
 const Interpreter = interpreter.Interpreter;
+const utils = @import("utils.zig");
 
 pub fn pop(int: *Interpreter) !void {
     _ = try int.stack.pop();
@@ -62,3 +63,17 @@ pub fn swap(comptime n: comptime_int) Instruction {
     };
     return swapT.swap;
 }
+
+// pub fn dupn(int: *Interpreter) !void {
+//     const x = try int.stack.pop();
+//     const imm = try utils.castInt(u8, x);
+//     const n = @as(u16, @intCast(imm)) + 1;
+//     return int.stack.dup(n);
+// }
+
+// pub fn swapn(int: *Interpreter) !void {
+//     const x = try int.stack.pop();
+//     const imm = try utils.castInt(u8, x);
+//     const n = @as(u16, @intCast(imm)) + 1;
+//     return int.stack.swap(n);
+// }

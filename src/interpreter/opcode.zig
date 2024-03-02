@@ -1,9 +1,11 @@
 const std = @import("std");
 const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
 
 /// EVM opcodes.
 pub const Opcode = enum(u8) {
     STOP = 0x00,
+
     ADD = 0x01,
     MUL = 0x02,
     SUB = 0x03,
@@ -15,6 +17,11 @@ pub const Opcode = enum(u8) {
     MULMOD = 0x09,
     EXP = 0x0A,
     SIGNEXTEND = 0x0B,
+
+    // 0x0C
+    // 0x0D
+    // 0x0E
+    // 0x0F
 
     LT = 0x10,
     GT = 0x11,
@@ -31,7 +38,26 @@ pub const Opcode = enum(u8) {
     SHR = 0x1C,
     SAR = 0x1D,
 
+    // 0x1E
+    // 0x1F
+
     KECCAK256 = 0x20,
+
+    // 0x21
+    // 0x22
+    // 0x23
+    // 0x24
+    // 0x25
+    // 0x26
+    // 0x27
+    // 0x28
+    // 0x29
+    // 0x2A
+    // 0x2B
+    // 0x2C
+    // 0x2D
+    // 0x2E
+    // 0x2F
 
     ADDRESS = 0x30,
     BALANCE = 0x31,
@@ -59,6 +85,14 @@ pub const Opcode = enum(u8) {
     CHAINID = 0x46,
     SELFBALANCE = 0x47,
     BASEFEE = 0x48,
+    BLOBHASH = 0x49,
+    BLOBBASEFEE = 0x4A,
+
+    // 0x4B
+    // 0x4C
+    // 0x4D
+    // 0x4E
+    // 0x4F
 
     POP = 0x50,
     MLOAD = 0x51,
@@ -150,18 +184,83 @@ pub const Opcode = enum(u8) {
     LOG3 = 0xA3,
     LOG4 = 0xA4,
 
+    // 0xA5
+    // 0xA6
+    // 0xA7
+    // 0xA8
+    // 0xA9
+    // 0xAA
+    // 0xAB
+    // 0xAC
+    // 0xAD
+    // 0xAE
+    // 0xAF
+    // 0xB0
+    // 0xB1
+    // 0xB2
+    // 0xB3
+    // 0xB4
+    // 0xB5
+    // 0xB6
+    // 0xB7
+    // 0xB8
+    // 0xB9
+    // 0xBA
+    // 0xBB
+    // 0xBC
+    // 0xBD
+    // 0xBE
+    // 0xBF
+    // 0xC0
+    // 0xC1
+    // 0xC2
+    // 0xC3
+    // 0xC4
+    // 0xC5
+    // 0xC6
+    // 0xC7
+    // 0xC8
+    // 0xC9
+    // 0xCA
+    // 0xCB
+    // 0xCC
+    // 0xCD
+    // 0xCE
+    // 0xCF
+    // 0xD0
+    // 0xD1
+    // 0xD2
+    // 0xD3
+    // 0xD4
+    // 0xD5
+    // 0xD6
+    // 0xD7
+    // 0xD8
+    // 0xD9
+    // 0xDA
+    // 0xDB
+    // 0xDC
+    // 0xDD
+    // 0xDE
+    // 0xDF
+
     RJUMP = 0xE0,
     RJUMPI = 0xE1,
     RJUMPV = 0xE2,
     CALLF = 0xE3,
     RETF = 0xE4,
-
+    // 0xE5
     DUPN = 0xE6,
     SWAPN = 0xE7,
     DATALOAD = 0xE8,
     DATALOADN = 0xE9,
-    DATASIZE = 0xEa,
-    DATACOPY = 0xEb,
+    DATASIZE = 0xEA,
+    DATACOPY = 0xEB,
+
+    // 0xEC
+    // 0xED
+    // 0xEE
+    // 0xEF
 
     CREATE = 0xF0,
     CALL = 0xF1,
@@ -169,7 +268,13 @@ pub const Opcode = enum(u8) {
     RETURN = 0xF3,
     DELEGATECALL = 0xF4,
     CREATE2 = 0xF5,
+    // 0xF6
+    // 0xF7
+    // 0xF8
+    // 0xF9
     STATICCALL = 0xFA,
+    // 0xFB
+    // 0xFC
     REVERT = 0xFD,
     INVALID = 0xFE,
     SELFDESTRUCT = 0xFF,
@@ -209,7 +314,7 @@ pub const Opcode = enum(u8) {
 test "opcode maps" {
     for (Opcode.names, 0..) |name, i| {
         const is_valid = name != null;
-        try expect(Opcode.isValid(@intCast(i)) == is_valid);
+        try expectEqual(Opcode.isValid(@intCast(i)), is_valid);
         if (is_valid) {
             try expect(std.mem.eql(u8, Opcode.name(@enumFromInt(i)), name.?));
         }
@@ -217,39 +322,39 @@ test "opcode maps" {
 }
 
 test "opcode isPush" {
-    try expect(Opcode.MCOPY.isPush() == null);
-    try expect(Opcode.PUSH0.isPush().? == 0);
-    try expect(Opcode.PUSH1.isPush().? == 1);
-    try expect(Opcode.PUSH2.isPush().? == 2);
-    try expect(Opcode.PUSH3.isPush().? == 3);
-    try expect(Opcode.PUSH4.isPush().? == 4);
-    try expect(Opcode.PUSH5.isPush().? == 5);
-    try expect(Opcode.PUSH6.isPush().? == 6);
-    try expect(Opcode.PUSH7.isPush().? == 7);
-    try expect(Opcode.PUSH8.isPush().? == 8);
-    try expect(Opcode.PUSH9.isPush().? == 9);
-    try expect(Opcode.PUSH10.isPush().? == 10);
-    try expect(Opcode.PUSH11.isPush().? == 11);
-    try expect(Opcode.PUSH12.isPush().? == 12);
-    try expect(Opcode.PUSH13.isPush().? == 13);
-    try expect(Opcode.PUSH14.isPush().? == 14);
-    try expect(Opcode.PUSH15.isPush().? == 15);
-    try expect(Opcode.PUSH16.isPush().? == 16);
-    try expect(Opcode.PUSH17.isPush().? == 17);
-    try expect(Opcode.PUSH18.isPush().? == 18);
-    try expect(Opcode.PUSH19.isPush().? == 19);
-    try expect(Opcode.PUSH20.isPush().? == 20);
-    try expect(Opcode.PUSH21.isPush().? == 21);
-    try expect(Opcode.PUSH22.isPush().? == 22);
-    try expect(Opcode.PUSH23.isPush().? == 23);
-    try expect(Opcode.PUSH24.isPush().? == 24);
-    try expect(Opcode.PUSH25.isPush().? == 25);
-    try expect(Opcode.PUSH26.isPush().? == 26);
-    try expect(Opcode.PUSH27.isPush().? == 27);
-    try expect(Opcode.PUSH28.isPush().? == 28);
-    try expect(Opcode.PUSH29.isPush().? == 29);
-    try expect(Opcode.PUSH30.isPush().? == 30);
-    try expect(Opcode.PUSH31.isPush().? == 31);
-    try expect(Opcode.PUSH32.isPush().? == 32);
-    try expect(Opcode.DUP1.isPush() == null);
+    try expectEqual(Opcode.MCOPY.isPush(), null);
+    try expectEqual(Opcode.PUSH0.isPush().?, 0);
+    try expectEqual(Opcode.PUSH1.isPush().?, 1);
+    try expectEqual(Opcode.PUSH2.isPush().?, 2);
+    try expectEqual(Opcode.PUSH3.isPush().?, 3);
+    try expectEqual(Opcode.PUSH4.isPush().?, 4);
+    try expectEqual(Opcode.PUSH5.isPush().?, 5);
+    try expectEqual(Opcode.PUSH6.isPush().?, 6);
+    try expectEqual(Opcode.PUSH7.isPush().?, 7);
+    try expectEqual(Opcode.PUSH8.isPush().?, 8);
+    try expectEqual(Opcode.PUSH9.isPush().?, 9);
+    try expectEqual(Opcode.PUSH10.isPush().?, 10);
+    try expectEqual(Opcode.PUSH11.isPush().?, 11);
+    try expectEqual(Opcode.PUSH12.isPush().?, 12);
+    try expectEqual(Opcode.PUSH13.isPush().?, 13);
+    try expectEqual(Opcode.PUSH14.isPush().?, 14);
+    try expectEqual(Opcode.PUSH15.isPush().?, 15);
+    try expectEqual(Opcode.PUSH16.isPush().?, 16);
+    try expectEqual(Opcode.PUSH17.isPush().?, 17);
+    try expectEqual(Opcode.PUSH18.isPush().?, 18);
+    try expectEqual(Opcode.PUSH19.isPush().?, 19);
+    try expectEqual(Opcode.PUSH20.isPush().?, 20);
+    try expectEqual(Opcode.PUSH21.isPush().?, 21);
+    try expectEqual(Opcode.PUSH22.isPush().?, 22);
+    try expectEqual(Opcode.PUSH23.isPush().?, 23);
+    try expectEqual(Opcode.PUSH24.isPush().?, 24);
+    try expectEqual(Opcode.PUSH25.isPush().?, 25);
+    try expectEqual(Opcode.PUSH26.isPush().?, 26);
+    try expectEqual(Opcode.PUSH27.isPush().?, 27);
+    try expectEqual(Opcode.PUSH28.isPush().?, 28);
+    try expectEqual(Opcode.PUSH29.isPush().?, 29);
+    try expectEqual(Opcode.PUSH30.isPush().?, 30);
+    try expectEqual(Opcode.PUSH31.isPush().?, 31);
+    try expectEqual(Opcode.PUSH32.isPush().?, 32);
+    try expectEqual(Opcode.DUP1.isPush(), null);
 }

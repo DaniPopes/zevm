@@ -23,12 +23,10 @@ zig build test
 zig build-exe -OReleaseFast -fstrip -femit-asm -femit-llvm-ir -lc src/main.zig
 ```
 
-<!-- TODO: Doesn't work as of Zig 0.11 or 0.12.0-dev.3123+147beec7d (2023-03-01)
-- Emit ASM without using LLVM:
+- Emit ASM without using LLVM (only works with Zig 0.12) (doesn't actually emit anything?):
 ```sh
-zig build-exe -OReleaseFast -fstrip -femit-asm -fno-llvm -lc src/main.zig
+zig build-exe -OReleaseFast -fstrip -femit-asm -fno-llvm -fno-lld -lc src/main.zig
 ```
--->
 
 #### License
 
