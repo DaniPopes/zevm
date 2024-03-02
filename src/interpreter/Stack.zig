@@ -1,11 +1,11 @@
 //! A simple stack implementation that uses a fixed-size array for storage.
 
 const std = @import("std");
+const debug = std.log.debug;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
 const expectError = std.testing.expectError;
-const debug = std.log.debug;
 
 const InstructionResult = @import("interpreter.zig").InstructionResult;
 
@@ -25,7 +25,7 @@ pub fn PopNTop(comptime n: usize) type {
 }
 
 /// Create a new uninitialized stack with length 0.
-pub fn init() Self {
+pub inline fn init() Self {
     return comptime .{
         .data = undefined,
         .len = 0,
@@ -33,7 +33,7 @@ pub fn init() Self {
 }
 
 /// Returns the slice of the stack's initialized data.
-pub fn dataSlice(self: *Self) []const u256 {
+pub inline fn dataSlice(self: *Self) []const u256 {
     return self.data[0..self.len];
 }
 
@@ -49,10 +49,8 @@ pub inline fn push(self: *Self, value: u256) !void {
 }
 
 /// Pushes `n` elements onto the stack, or returns `StackOverflow` if the stack is full.
-pub fn pushn(self: *Self, comptime n: usize, values: [n]u256) !void {
-    if (self.len + n > capacity) {
-        return InstructionResult.StackOverflow;
-    }
+pub inline fn pushn(self: *Self, comptime n: usize, values: [n]u256) !void {
+    if (self.len + n > capacity) return InstructionResult.StackOverflow;
     inline for (values) |val| {
         self.data[self.len] = val;
         self.len += 1;
@@ -67,36 +65,33 @@ pub inline fn pop(self: *Self) !u256 {
 
 /// Removes the topmost `n` elements from the stack and returns them, or `StackUnderflow` if it
 /// is empty.
-pub fn popn(self: *Self, comptime n: usize) ![n]u256 {
+pub inline fn popn(self: *Self, comptime n: usize) ![n]u256 {
     if (self.len < n) return InstructionResult.StackUnderflow;
-    self.len -= n;
-
     var ret: [n]u256 = undefined;
-    comptime var i = n;
     inline for (&ret) |*r| {
-        i -= 1;
-        r.* = self.data[self.len + i];
+        self.len -= 1;
+        r.* = self.data[self.len];
     }
     return ret;
 }
 
 /// Returns a pointer to the topmost element of the stack, or `StackUnderflow` if it
 /// is empty.
-pub fn top(self: *Self) !*u256 {
+pub inline fn top(self: *Self) !*u256 {
     if (self.len == 0) return InstructionResult.StackUnderflow;
     return &self.data[self.len - 1];
 }
 
 /// Removes the topmost element from the stack and returns it, along with the new topmost
 /// element.
-pub fn popTop(self: *Self) !struct { u256, *u256 } {
+pub inline fn popTop(self: *Self) !struct { u256, *u256 } {
     const x = try self.popnTop(1);
     return .{ x.values[0], x.top };
 }
 
 /// Removes the topmost `n` elements from the stack and returns them, along with the new topmost
 /// element.
-pub fn popnTop(self: *Self, comptime n: usize) !PopNTop(n) {
+pub inline fn popnTop(self: *Self, comptime n: usize) !PopNTop(n) {
     if (self.len < n + 1) return InstructionResult.StackUnderflow;
     return .{
         .values = self.popn(n) catch unreachable,
