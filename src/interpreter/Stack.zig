@@ -102,19 +102,23 @@ pub inline fn popnTop(self: *Self, comptime n: usize) !PopNTop(n) {
 /// Duplicates the `n`th value from the top of the stack.
 /// `n` cannot be `0`.
 pub inline fn dup(self: *Self, n: usize) !void {
-    const len = self.len;
     if (n == 0) unreachable;
-    if (len < n) return InstructionResult.StackUnderflow;
-    if (len + 1 > capacity) return InstructionResult.StackOverflow;
-    return self.push(self.data[len - n]);
+    if (self.len < n) return InstructionResult.StackUnderflow;
+    if (self.len + 1 > capacity) return InstructionResult.StackOverflow;
+    return self.push(self.data[self.len - n]);
 }
 
 /// Swaps the topmost value with the `n`th value from the top.
 pub inline fn swap(self: *Self, n: usize) !void {
-    const len = self.len;
-    if (len <= n) return InstructionResult.StackUnderflow;
-    const last = len - 1;
-    std.mem.swap(u256, &self.data[last], &self.data[last - n]);
+    return self.exchange(0, n);
+}
+
+/// Swaps the `n`th value with the `n + m`th value from the top.
+pub inline fn exchange(self: *Self, n: usize, m: usize) !void {
+    const n_m, const overflow = @addWithOverflow(n, m);
+    if (overflow != 0 or self.len <= n_m) return InstructionResult.StackUnderflow;
+    const last = self.len - 1;
+    std.mem.swap(u256, &self.data[last - n], &self.data[last - n_m]);
 }
 
 pub fn dump(self: *Self) void {

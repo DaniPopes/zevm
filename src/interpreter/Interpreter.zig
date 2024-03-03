@@ -12,7 +12,7 @@ pub const Memory = @import("Memory.zig");
 pub const InstructionResult = @import("result.zig").InstructionResult;
 pub const Opcode = @import("opcode.zig").Opcode;
 
-/// The instruction function type.
+/// The instruction function pointer type.
 pub const Instruction = *const fn (*Self) InstructionResult!void;
 
 const instructions: [256]Instruction = init: {
@@ -178,18 +178,25 @@ const instructions: [256]Instruction = init: {
             // .LOG3 => todo.log(3),
             // .LOG4 => todo.log(4),
 
+            // .DATALOAD => todo.dataload,
+            // .DATALOADN => todo.dataloadn,
+            // .DATASIZE => todo.datasize,
+            // .DATACOPY => todo.datacopy,
+
             // .RJUMP => todo.rjump,
             // .RJUMPI => todo.rjumpi,
             // .RJUMPV => todo.rjumpv,
             // .CALLF => todo.callf,
             // .RETF => todo.retf,
+            // .JUMPF => todo.jumpf,
 
-            // .DUPN => stack.dupn,
-            // .SWAPN => stack.swapn,
-            // .DATALOAD => todo.dataload,
-            // .DATALOADN => todo.dataloadn,
-            // .DATASIZE => todo.datasize,
-            // .DATACOPY => todo.datacopy,
+            .DUPN => stack.dupn,
+            .SWAPN => stack.swapn,
+            .EXCHANGE => stack.exchange,
+
+            // .CREATE3 => todo.create3,
+            // .CREATE4 => todo.create4,
+            // .RETURNCONTRACT => todo.returncontract,
 
             // .CREATE => todo.create,
             // .CALL => todo.call,
@@ -197,7 +204,13 @@ const instructions: [256]Instruction = init: {
             .RETURN => control.ret,
             // .DELEGATECALL => todo.delegatecall,
             // .CREATE2 => todo.create2,
+            // .RETURNDATALOAD => todo.returndataload,
+
+            // .EXTCALL => todo.extcall,
+            // .EXFCALL => todo.exfcall,
             // .STATICCALL => todo.staticcall,
+            // .EXTSCALL => todo.extscall,
+
             .REVERT => control.revert,
             .INVALID => control.invalid,
             // .SELFDESTRUCT => todo.selfdestruct,
@@ -266,30 +279,53 @@ pub fn run(self: *Self) InstructionResult {
 }
 
 /// Evaluates the instruction located at the current instruction pointer.
+/// Increments the instruction pointer by at least one, depending on the evaluated instruction.
 pub fn step(self: *Self) !void {
-    const opcode = self.nextByte();
+    const opcode = try self.nextByte();
     if (std.log.defaultLogEnabled(.debug)) {
         var as_enum = @as(Opcode, @enumFromInt(opcode));
 
-        var data_: []const u8 = ([0]u8{})[0..];
+        var data_: []const u8 = &[0]u8{};
         if (as_enum.isPush()) |n| data_ = self.ip[0..n];
         const data = std.fmt.fmtSliceHexLower(data_);
 
         debug("{: >4}: 0x{X:0>2} {s} {}", .{ self.pc(), opcode, @tagName(as_enum), data });
     }
-    if (!self.inBounds(null)) return InstructionResult.OutOfOffset;
     return instructions[opcode](self);
 }
 
+/// Reads one byte from the bytecode.
+pub inline fn readByte(self: *Self) !u8 {
+    return (try self.readBytes(1))[0];
+}
+
+/// Reads `n` bytes from the bytecode.
+pub inline fn readBytes(self: *Self, n: usize) ![*]const u8 {
+    if (!self.inBounds(self.ip + n)) return InstructionResult.OutOfOffset;
+    return self.ip[0..n];
+}
+
+/// Reads the next byte, advancing the instruction pointer if successful.
+pub inline fn nextByte(self: *Self) !u8 {
+    return (try self.nextBytes(1))[0];
+}
+
+/// Reads the next `n` bytes, advancing the instruction pointer if successful.
+pub inline fn nextBytes(self: *Self, n: usize) ![*]const u8 {
+    const bytes = try self.readBytes(n);
+    self.ip += n;
+    return bytes;
+}
+
 /// Checks if the instruction pointer is in bounds of `bytecode`.
-pub fn inBounds(self: *Self, iptr: ?[*]const u8) bool {
-    const ip = @intFromPtr(iptr orelse self.ip);
+pub inline fn inBounds(self: *Self, iptr: [*]const u8) bool {
+    const ip = @intFromPtr(iptr);
     const start = @intFromPtr(self.bytecode.ptr);
     return ip >= start and ip <= start + self.bytecode.len;
 }
 
 /// Returns `true` if the given pointer is a valid jump destination.
-pub fn isValidJump(self: *Self, iptr: [*]const u8) bool {
+pub inline fn isValidJump(self: *Self, iptr: [*]const u8) bool {
     return self.inBounds(iptr) and iptr[0] == @intFromEnum(Opcode.JUMPDEST);
 }
 
@@ -299,24 +335,6 @@ pub fn returnValue(self: *Self) []u8 {
     return self.memory.getSlice(self.return_offset, self.return_len);
 }
 
-pub fn dumpReturnValue(self: *Self) void {
-    if (self.return_len == 0) return;
-    debug("Return value:", .{});
-    utils.dumpSlice(self.returnValue());
-}
-
-/// Returns the next byte and advances the instruction pointer by one.
-pub fn nextByte(self: *Self) u8 {
-    return self.nextByteSlice(1)[0];
-}
-
-/// Returns a pointer to the next `n` bytes and advances the instruction pointer by `n`.
-pub fn nextByteSlice(self: *Self, comptime n: usize) *const [n]u8 {
-    const value = self.ip[0..n];
-    self.ip += n;
-    return value;
-}
-
 pub fn memResize(self: *Self, offset: usize, len: usize) !void {
     const new_len = next32(offset +| len) catch return InstructionResult.MemoryOOG;
     // TODO: memory limit
@@ -324,6 +342,12 @@ pub fn memResize(self: *Self, offset: usize, len: usize) !void {
         // TODO: gas
         self.memory.resize(new_len) catch @panic("OOM");
     }
+}
+
+pub fn dumpReturnValue(self: *Self) void {
+    if (self.return_len == 0) return;
+    debug("Return value:", .{});
+    utils.dumpSlice(self.returnValue());
 }
 
 fn next32(x: usize) !usize {

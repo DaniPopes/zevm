@@ -227,10 +227,11 @@ pub const Opcode = enum(u8) {
     // 0xCD
     // 0xCE
     // 0xCF
-    // 0xD0
-    // 0xD1
-    // 0xD2
-    // 0xD3
+
+    DATALOAD = 0xD0,
+    DATALOADN = 0xD1,
+    DATASIZE = 0xD2,
+    DATACOPY = 0xD3,
     // 0xD4
     // 0xD5
     // 0xD6
@@ -249,17 +250,18 @@ pub const Opcode = enum(u8) {
     RJUMPV = 0xE2,
     CALLF = 0xE3,
     RETF = 0xE4,
-    // 0xE5
+    JUMPF = 0xE5,
+
     DUPN = 0xE6,
     SWAPN = 0xE7,
-    DATALOAD = 0xE8,
-    DATALOADN = 0xE9,
-    DATASIZE = 0xEA,
-    DATACOPY = 0xEB,
+    EXCHANGE = 0xE8,
+    // 0xE9
+    // 0xEA
+    // 0xEB
 
-    // 0xEC
-    // 0xED
-    // 0xEE
+    CREATE3 = 0xEC,
+    CREATE4 = 0xED,
+    RETURNCONTRACT = 0xEE,
     // 0xEF
 
     CREATE = 0xF0,
@@ -269,12 +271,14 @@ pub const Opcode = enum(u8) {
     DELEGATECALL = 0xF4,
     CREATE2 = 0xF5,
     // 0xF6
-    // 0xF7
-    // 0xF8
-    // 0xF9
+    RETURNDATALOAD = 0xF7,
+
+    EXTCALL = 0xF8,
+    EXFCALL = 0xF9,
     STATICCALL = 0xFA,
-    // 0xFB
+    EXTSCALL = 0xFB,
     // 0xFC
+
     REVERT = 0xFD,
     INVALID = 0xFE,
     SELFDESTRUCT = 0xFF,

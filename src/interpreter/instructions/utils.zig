@@ -7,16 +7,12 @@ const InstructionResult = Interpreter.InstructionResult;
 pub const KECCAK_EMPTY: [32]u8 = decodeHex(32, "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470".*);
 
 pub fn castInt(comptime T: type, x: u256) !T {
-    if (x > std.math.maxInt(T)) {
-        return InstructionResult.InvalidOperandOOG;
-    }
+    if (x > std.math.maxInt(T)) return InstructionResult.InvalidOperandOOG;
     return @intCast(x);
 }
 
 pub fn castSaturate(comptime T: type, x: u256) T {
-    if (x > std.math.maxInt(T)) {
-        return std.math.maxInt(T);
-    }
+    if (x > std.math.maxInt(T)) return std.math.maxInt(T);
     return @intCast(x);
 }
 
