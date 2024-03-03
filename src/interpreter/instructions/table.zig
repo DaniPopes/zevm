@@ -1,28 +1,25 @@
 const std = @import("std");
-const debug = std.log.debug;
-const Allocator = std.mem.Allocator;
 
-const utils = @import("utils.zig");
+const Interpreter = @import("../Interpreter.zig");
+const InstructionPtr = Interpreter.InstructionPtr;
+const Opcode = Interpreter.Opcode;
 
-pub const Stack = @import("stack.zig").Stack;
-pub const Memory = @import("memory.zig").Memory;
+/// The instruction lookup table.
+pub const TABLE: [256]InstructionPtr = init: {
+    const arithmetic = @import("arithmetic.zig");
+    const bitwise = @import("bitwise.zig");
+    const comparison = @import("comparison.zig");
+    const control = @import("control.zig");
+    const hash = @import("hash.zig");
+    const memory = @import("memory.zig");
+    const stack = @import("stack.zig");
 
-pub const InstructionResult = @import("result.zig").InstructionResult;
-pub const Opcode = @import("opcode.zig").Opcode;
-
-const instructions: [256]Instruction = init: {
-    const arithmetic = @import("instructions/arithmetic.zig");
-    const bitwise = @import("instructions/bitwise.zig");
-    const comparison = @import("instructions/comparison.zig");
-    const control = @import("instructions/control.zig");
-    const memory = @import("instructions/memory.zig");
-    const stack = @import("instructions/stack.zig");
-
-    var map: [256]Instruction = undefined;
+    var map: [256]InstructionPtr = undefined;
     // TODO: remaining instructions
-    for (0..255) |i| {
+    for (0..256) |i| {
         map[i] = switch (@as(Opcode, @enumFromInt(i))) {
             .STOP => control.stop,
+
             .ADD => arithmetic.add,
             .MUL => arithmetic.mul,
             .SUB => arithmetic.sub,
@@ -50,7 +47,7 @@ const instructions: [256]Instruction = init: {
             .SHR => bitwise.shr,
             .SAR => bitwise.sar,
 
-            // .KECCAK256 => todo.keccak256,
+            .KECCAK256 => hash.keccak256,
 
             // .ADDRESS => todo.address,
             // .BALANCE => todo.balance,
@@ -78,6 +75,8 @@ const instructions: [256]Instruction = init: {
             // .CHAINID => todo.chainid,
             // .SELFBALANCE => todo.selfbalance,
             // .BASEFEE => todo.basefee,
+            // .BLOBHASH = todo.blobhash,
+            // .BLOBBASEFEE = todo.blobbasefee,
 
             .POP => stack.pop,
             .MLOAD => memory.mload,
@@ -169,18 +168,25 @@ const instructions: [256]Instruction = init: {
             // .LOG3 => todo.log(3),
             // .LOG4 => todo.log(4),
 
+            // .DATALOAD => todo.dataload,
+            // .DATALOADN => todo.dataloadn,
+            // .DATASIZE => todo.datasize,
+            // .DATACOPY => todo.datacopy,
+
             // .RJUMP => todo.rjump,
             // .RJUMPI => todo.rjumpi,
             // .RJUMPV => todo.rjumpv,
             // .CALLF => todo.callf,
             // .RETF => todo.retf,
+            // .JUMPF => todo.jumpf,
 
-            // .DUPN => todo.dupn,
-            // .SWAPN => todo.swapn,
-            // .DATALOAD => todo.dataload,
-            // .DATALOADN => todo.dataloadn,
-            // .DATASIZE => todo.datasize,
-            // .DATACOPY => todo.datacopy,
+            .DUPN => stack.dupn,
+            .SWAPN => stack.swapn,
+            .EXCHANGE => stack.exchange,
+
+            // .CREATE3 => todo.create3,
+            // .CREATE4 => todo.create4,
+            // .RETURNCONTRACT => todo.returncontract,
 
             // .CREATE => todo.create,
             // .CALL => todo.call,
@@ -188,7 +194,13 @@ const instructions: [256]Instruction = init: {
             .RETURN => control.ret,
             // .DELEGATECALL => todo.delegatecall,
             // .CREATE2 => todo.create2,
+            // .RETURNDATALOAD => todo.returndataload,
+
+            // .EXTCALL => todo.extcall,
+            // .EXFCALL => todo.exfcall,
             // .STATICCALL => todo.staticcall,
+            // .EXTSCALL => todo.extscall,
+
             .REVERT => control.revert,
             .INVALID => control.invalid,
             // .SELFDESTRUCT => todo.selfdestruct,
@@ -199,124 +211,6 @@ const instructions: [256]Instruction = init: {
     break :init map;
 };
 
-/// The instruction function type.
-pub const Instruction = *const fn (*Interpreter) InstructionResult!void;
-
-/// EVM bytecode interpreter.
-pub const Interpreter = struct {
-    /// The bytecode slice.
-    bytecode: []const u8,
-    /// The current instruction pointer. This always points into `bytecode`.
-    ip: [*]const u8,
-    /// The stack.
-    stack: Stack,
-    /// The memory.
-    memory: Memory,
-    /// The offset into `memory` of the return data.
-    ///
-    /// This value must be ignored if `return_len` is 0.
-    return_offset: usize,
-    /// The length of the return data.
-    return_len: usize,
-
-    /// Creates a new interpreter.
-    pub fn init(bytecode: []const u8, allocator: Allocator) Allocator.Error!Interpreter {
-        return .{
-            .bytecode = bytecode,
-            .ip = bytecode.ptr,
-            .stack = Stack.init(),
-            .memory = try Memory.init(allocator),
-            .return_offset = 0,
-            .return_len = 0,
-        };
-    }
-
-    pub fn deinit(self: *Interpreter) void {
-        self.memory.deinit();
-    }
-
-    /// Returns the current program counter.
-    pub fn pc(self: *Interpreter) usize {
-        return @intFromPtr(self.ip) - @intFromPtr(self.bytecode.ptr);
-    }
-
-    /// Runs the instruction loop until completion.
-    pub fn run(self: *Interpreter) InstructionResult {
-        var c: usize = 0;
-        const res = while (true) {
-            if (c > 10000) {
-                std.log.warn("execution taking too long, breaking", .{});
-                break InstructionResult.OutOfGas;
-            }
-            c += 1;
-            self.step() catch |e| break e;
-        };
-        debug("Executed {} instructions, result: {}", .{ c, res });
-        return res;
-    }
-
-    /// Evaluates the instruction located at the current instruction pointer.
-    pub fn step(self: *Interpreter) !void {
-        const opcode = self.nextByte();
-        if (std.log.defaultLogEnabled(.debug)) {
-            var as_enum = @as(Opcode, @enumFromInt(opcode));
-
-            var data_: []const u8 = ([0]u8{})[0..];
-            if (as_enum.isPush()) |n| data_ = self.ip[0..n];
-            const data = std.fmt.fmtSliceHexLower(data_);
-
-            debug("{: >4}: 0x{X:0>2} {s} {}", .{ self.pc(), opcode, @tagName(as_enum), data });
-        }
-        if (!self.inBounds(null)) return InstructionResult.OutOfOffset;
-        return instructions[opcode](self);
-    }
-
-    /// Checks if the instruction pointer is in bounds of `bytecode`.
-    pub fn inBounds(self: *Interpreter, iptr: ?[*]const u8) bool {
-        const ip = @intFromPtr(iptr orelse self.ip);
-        const start = @intFromPtr(self.bytecode.ptr);
-        return ip >= start and ip <= start + self.bytecode.len;
-    }
-
-    /// Returns the slice of the return value.
-    pub fn returnValue(self: *Interpreter) []u8 {
-        if (self.return_len == 0) return &[0]u8{};
-        return self.memory.getSlice(self.return_offset, self.return_len);
-    }
-
-    pub fn dumpReturnValue(self: *Interpreter) void {
-        if (self.return_len == 0) return;
-        debug("Return value:", .{});
-        utils.dumpSlice(self.returnValue());
-    }
-
-    /// Returns the next byte and advances the instruction pointer by one.
-    pub fn nextByte(self: *Interpreter) u8 {
-        return self.nextByteSlice(1)[0];
-    }
-
-    /// Returns a pointer to the next `n` bytes and advances the instruction pointer by `n`.
-    pub fn nextByteSlice(self: *Interpreter, comptime n: usize) *const [n]u8 {
-        const value = self.ip[0..n];
-        self.ip += n;
-        return value;
-    }
-
-    pub fn memResize(self: *Interpreter, offset: usize, len: usize) !void {
-        const new_len = next32(offset +| len) catch return InstructionResult.MemoryOOG;
-        // TODO: memory limit
-        if (new_len > self.memory.len) {
-            // TODO: gas
-            self.memory.resize(new_len) catch @panic("OOM");
-        }
-    }
-};
-
-fn next32(x: usize) !usize {
-    var r = x;
-    r &= 31;
-    r +%= 1;
-    r = ~r;
-    r &= 31;
-    return std.math.add(usize, x, r);
+test {
+    std.testing.refAllDecls(@This());
 }

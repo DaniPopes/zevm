@@ -1,9 +1,8 @@
 const std = @import("std");
 
-const interpreter = @import("../interpreter.zig");
+const Interpreter = @import("../Interpreter.zig");
 const utils = @import("utils.zig");
-const InstructionResult = interpreter.InstructionResult;
-const Interpreter = interpreter.Interpreter;
+const InstructionResult = Interpreter.InstructionResult;
 
 pub fn mload(int: *Interpreter) !void {
     const offset = try utils.castInt(usize, try int.stack.pop());
@@ -12,30 +11,30 @@ pub fn mload(int: *Interpreter) !void {
 }
 
 pub fn mstore(int: *Interpreter) !void {
-    var x = try int.stack.popn(2);
-    const offset = try utils.castInt(usize, x[0]);
+    const offset_, const value = try int.stack.popn(2);
+    const offset = try utils.castInt(usize, offset_);
     try int.memResize(offset, 32);
-    int.memory.setU256(offset, &x[1]);
+    int.memory.setU256(offset, value);
 }
 
 pub fn mstore8(int: *Interpreter) !void {
-    const x = try int.stack.popn(2);
-    const offset = try utils.castInt(usize, x[0]);
+    const offset_, const value = try int.stack.popn(2);
+    const offset = try utils.castInt(usize, offset_);
     try int.memResize(offset, 1);
-    int.memory.setByte(offset, @intCast(x[1] & 0xff));
+    int.memory.setByte(offset, @intCast(value & 0xff));
 }
 
 pub fn msize(int: *Interpreter) !void {
-    return int.stack.push(int.memory.len);
+    return int.stack.push(int.memory.len());
 }
 
 pub fn mcopy(int: *Interpreter) !void {
-    const x = try int.stack.popn(3);
-    const len = try utils.castInt(usize, x[2]);
+    const dst_, const src_, const len_ = try int.stack.popn(3);
+    const len = try utils.castInt(usize, len_);
     if (len == 0) return;
 
-    const dst = try utils.castInt(usize, x[0]);
-    const src = try utils.castInt(usize, x[1]);
+    const dst = try utils.castInt(usize, dst_);
+    const src = try utils.castInt(usize, src_);
     try int.memResize(@max(dst, src), len);
     int.memory.copy(dst, src, len);
 }

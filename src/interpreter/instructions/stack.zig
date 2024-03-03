@@ -1,37 +1,34 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
-const interpreter = @import("../interpreter.zig");
-const Instruction = interpreter.Instruction;
-const InstructionResult = interpreter.InstructionResult;
-const Interpreter = interpreter.Interpreter;
+const Interpreter = @import("../Interpreter.zig");
+const Instruction = Interpreter.InstructionPtr;
+const InstructionResult = Interpreter.InstructionResult;
+const utils = @import("utils.zig");
 
 pub fn pop(int: *Interpreter) !void {
     _ = try int.stack.pop();
 }
 
+pub fn push0(int: *Interpreter) !void {
+    return int.stack.push(0);
+}
+
 pub fn push(comptime n: comptime_int) Instruction {
+    if (n == 0) return push0;
+
     if (n > 32) {
         @compileError("invalid push instruction");
     }
 
-    // no closures...
     const pushT = struct {
         fn push(int: *Interpreter) !void {
-            if (n == 0) {
-                return int.stack.push(0);
-            }
-            if (!int.inBounds(int.ip + n)) {
-                return InstructionResult.OutOfOffset;
-            }
-            if (n == 1) {
-                return int.stack.push(int.nextByte());
-            }
-
-            // @memcpy has way better codegen, `++` copies byte by byte for some reason
-            // var bytes: [32]u8 = [_]u8{0} ** (32 - n) ++ int.nextByteSlice(n);
-            comptime var bytes: [32]u8 = [_]u8{0} ** 32;
-            @memcpy(bytes[32 - n ..], int.nextByteSlice(n));
-            return int.stack.pushBeBytes(bytes);
+            asmComment(std.fmt.comptimePrint("push{}", .{n}));
+            const toPush = try int.readBytes(n);
+            var padded: [32]u8 = comptime [_]u8{0} ** 32;
+            @memcpy(padded[32 - n ..], toPush);
+            try int.stack.pushBeBytes(padded);
+            int.ip += n;
         }
     };
     return pushT.push;
@@ -44,6 +41,7 @@ pub fn dup(comptime n: comptime_int) Instruction {
 
     const dupT = struct {
         fn dup(int: *Interpreter) !void {
+            asmComment(std.fmt.comptimePrint("dup{}", .{n}));
             return int.stack.dup(n);
         }
     };
@@ -57,8 +55,35 @@ pub fn swap(comptime n: comptime_int) Instruction {
 
     const swapT = struct {
         fn swap(int: *Interpreter) !void {
+            asmComment(std.fmt.comptimePrint("swap{}", .{n}));
             return int.stack.swap(n);
         }
     };
     return swapT.swap;
+}
+
+pub fn dupn(int: *Interpreter) !void {
+    const imm = try int.readByte();
+    try int.stack.dup(@as(usize, @intCast(imm)) + 1);
+    int.ip += 1;
+}
+
+pub fn swapn(int: *Interpreter) !void {
+    const imm = try int.readByte();
+    try int.stack.swap(@as(usize, @intCast(imm)) + 1);
+    int.ip += 1;
+}
+
+pub fn exchange(int: *Interpreter) !void {
+    const imm = try int.readByte();
+    const n = (imm >> 4) + 1;
+    const m = (imm & 15) + 1;
+    try int.stack.exchange(n, m);
+    int.ip += 1;
+}
+
+inline fn asmComment(comptime s: []const u8) void {
+    if (comptime builtin.cpu.arch.isX86() and builtin.abi.isGnu()) {
+        asm volatile ("# " ++ s);
+    }
 }
