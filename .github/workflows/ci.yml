@@ -24,8 +24,8 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v2
         with:
           version: ${{ env.ZIG }}
-      - run: zig build
-      - run: zig build test
+      - run: zig build --verbose --summary all --color on
+      - run: zig build test --verbose --summary all --color on
   fmt:
     runs-on: ubuntu-latest
     steps:
