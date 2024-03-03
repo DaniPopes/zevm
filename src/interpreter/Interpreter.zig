@@ -10,6 +10,8 @@ pub const InstructionResult = @import("result.zig").InstructionResult;
 pub const Memory = @import("Memory.zig");
 pub const Opcode = @import("opcode.zig").Opcode;
 pub const Stack = @import("Stack.zig");
+pub const gas = @import("gas.zig");
+pub const Gas = gas.Gas;
 
 /// The instruction function type.
 pub const Instruction = fn (*Self) InstructionResult!void;
@@ -152,4 +154,8 @@ fn next32(x: usize) !usize {
     r = ~r;
     r &= 31;
     return std.math.add(usize, x, r);
+}
+
+test {
+    std.testing.refAllDecls(@This());
 }

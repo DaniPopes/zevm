@@ -1,7 +1,11 @@
 const std = @import("std");
 
 pub const Interpreter = @import("interpreter/Interpreter.zig");
+pub const Rev = @import("rev.zig").Rev;
 const Opcode = Interpreter.Opcode;
+
+/// EVMC: Ethereum Client-VM Connector API
+pub const evmc = @import("evmc");
 
 const std_options = struct {
     pub const log_level = .debug;
@@ -23,6 +27,9 @@ pub fn main() !void {
 
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
+
+    std.log.debug("{}", .{evmc.EVMC_PRAGUE});
+    _ = evmc.struct_evmc_result{};
 
     var bytecode: []const u8 = undefined;
     if (args.len >= 2) {

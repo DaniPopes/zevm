@@ -1,5 +1,7 @@
 const std = @import("std");
 
+// https://ziglang.org/learn/build-system
+
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
@@ -15,6 +17,15 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    const evmc = b.addTranslateC(.{
+        .root_source_file = .{ .path = "evmc/include/evmc/evmc.h" },
+        .target = target,
+        .optimize = optimize,
+        .link_libc = false,
+        .use_clang = true,
+    });
+    const evmc_module = evmc.createModule();
+
     const exe = b.addExecutable(.{
         .name = "zevm",
         // In this case the main source file is merely a path, however, in more
@@ -23,6 +34,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    exe.root_module.addImport("evmc", evmc_module);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -59,6 +71,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    unit_tests.root_module.addImport("evmc", evmc_module);
 
     const run_unit_tests = b.addRunArtifact(unit_tests);
 

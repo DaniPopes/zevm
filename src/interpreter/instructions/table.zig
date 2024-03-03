@@ -210,3 +210,7 @@ pub const TABLE: [256]InstructionPtr = init: {
     }
     break :init map;
 };
+
+test {
+    std.testing.refAllDecls(@This());
+}
