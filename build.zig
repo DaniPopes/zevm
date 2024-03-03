@@ -2,19 +2,14 @@ const std = @import("std");
 
 // https://ziglang.org/learn/build-system
 
-// Although this function looks imperative, note that its job is to
-// declaratively construct a build graph that will be executed by an external
-// runner.
-pub fn build(b: *std.Build) void {
-    // Standard target options allows the person running `zig build` to choose
-    // what target to build for. Here we do not override the defaults, which
-    // means any target is allowed, and the default is native. Other options
-    // for restricting supported target set are available.
-    const target = b.standardTargetOptions(.{});
+const name = "zevm";
 
-    // Standard optimization options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
-    // set a preferred release mode, allowing the user to decide how to optimize.
+pub fn build(b: *std.Build) void {
+    const emit = b.option(bool, "emit", "emit assembly and LLVM-IR") orelse false;
+    const use_llvm = if (b.option(bool, "no-use-llvm", "don't use LLVM -- doesn't work yet")) |v| !v else null;
+    const strip = b.option(bool, "strip", "strip executable");
+
+    const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     const evmc = b.addTranslateC(.{
@@ -27,14 +22,25 @@ pub fn build(b: *std.Build) void {
     const evmc_module = evmc.createModule();
 
     const exe = b.addExecutable(.{
-        .name = "zevm",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
+        .name = name,
         .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,
+        .use_lld = use_llvm,
+        .use_llvm = use_llvm,
+        .strip = strip,
     });
     exe.root_module.addImport("evmc", evmc_module);
+
+    if (emit) {
+        const install_asm = b.addInstallFile(exe.getEmittedAsm(), name ++ ".s");
+        b.getInstallStep().dependOn(&install_asm.step);
+
+        if (use_llvm orelse true) {
+            const install_llvm_ir = b.addInstallFile(exe.getEmittedLlvmIr(), name ++ ".ll");
+            b.getInstallStep().dependOn(&install_llvm_ir.step);
+        }
+    }
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

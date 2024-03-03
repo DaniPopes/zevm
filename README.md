@@ -6,7 +6,7 @@ Inspired by [REVM](https://github.com/bluealloy/revm).
 
 ## Usage
 
-Tested with Zig 0.11.0.
+Tested with Zig `0.12.0-dev.3123+147beec7d`, should work with any Zig 0.12 version.
 
 - Run:
 ```sh
@@ -20,12 +20,17 @@ zig build test
 
 - Emit LLVM-IR and ASM:
 ```sh
-zig build-exe -OReleaseFast -fstrip -femit-asm -femit-llvm-ir src/main.zig
+zig build -Doptimize=ReleaseFast -Dstrip -Demit
 ```
 
-- Emit ASM without using LLVM (only works with Zig 0.12) (doesn't actually emit anything?):
+- Emit ASM without using LLVM (not fully implemented yet):
 ```sh
-zig build-exe -OReleaseFast -fstrip -femit-asm -fno-llvm -fno-lld src/main.zig
+zig build -Doptimize=ReleaseFast -Dstrip -Demit -Dno-use-llvm
+```
+
+- View more options:
+```sh
+zig build --help
 ```
 
 #### License
