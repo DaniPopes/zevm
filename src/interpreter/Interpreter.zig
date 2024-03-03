@@ -11,8 +11,10 @@ pub const Memory = @import("Memory.zig");
 pub const Opcode = @import("opcode.zig").Opcode;
 pub const Stack = @import("Stack.zig");
 
+/// The instruction function type.
+pub const Instruction = fn (*Self) InstructionResult!void;
 /// The instruction function pointer type.
-pub const Instruction = *const fn (*Self) InstructionResult!void;
+pub const InstructionPtr = *const Instruction;
 
 /// The bytecode slice.
 bytecode: []const u8,
@@ -131,7 +133,7 @@ pub fn returnValue(self: *Self) []u8 {
 pub fn memResize(self: *Self, offset: usize, len: usize) !void {
     const new_len = next32(offset +| len) catch return InstructionResult.MemoryOOG;
     // TODO: memory limit
-    if (new_len > self.memory.len) {
+    if (new_len > self.memory.len()) {
         // TODO: gas
         self.memory.resize(new_len) catch @panic("OOM");
     }

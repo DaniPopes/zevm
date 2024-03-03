@@ -25,7 +25,7 @@ pub fn mstore8(int: *Interpreter) !void {
 }
 
 pub fn msize(int: *Interpreter) !void {
-    return int.stack.push(int.memory.len);
+    return int.stack.push(int.memory.len());
 }
 
 pub fn mcopy(int: *Interpreter) !void {
