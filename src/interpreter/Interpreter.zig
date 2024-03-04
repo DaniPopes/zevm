@@ -3,6 +3,7 @@
 const std = @import("std");
 const debug = std.log.debug;
 const Allocator = std.mem.Allocator;
+const expectEqual = std.testing.expectEqual;
 
 const table = @import("instructions/table.zig");
 const utils = @import("utils.zig");
@@ -12,6 +13,7 @@ pub const Opcode = @import("opcode.zig").Opcode;
 pub const Stack = @import("Stack.zig");
 pub const gas = @import("gas.zig");
 pub const Gas = gas.Gas;
+const Rev = @import("../rev.zig").Rev;
 
 /// The instruction function type.
 pub const Instruction = fn (*Self) InstructionResult!void;
@@ -22,6 +24,8 @@ pub const InstructionPtr = *const Instruction;
 bytecode: []const u8,
 /// The current instruction pointer. This always points into `bytecode`.
 ip: [*]const u8,
+/// The gas state.
+gas: Gas,
 /// The stack.
 stack: Stack,
 /// The memory.
@@ -33,17 +37,20 @@ return_offset: usize,
 /// The length of the return data.
 return_len: usize,
 
+/// The EVM revision.
+rev: Rev = Rev.latest,
+
 const Self = @This();
 
 /// Creates a new interpreter.
-pub fn init(bytecode: []const u8, allocator: Allocator) !Self {
+pub fn init(allocator: Allocator, bytecode: []const u8, gas_limit: u64) !Self {
     if (bytecode.len == 0) {
         return error.EmptyBytecode;
     }
-
     return .{
         .bytecode = bytecode,
         .ip = bytecode.ptr,
+        .gas = Gas.init(gas_limit),
         .stack = Stack.init(),
         .memory = try Memory.init(allocator),
         .return_offset = 0,
@@ -55,13 +62,22 @@ pub fn deinit(self: *Self) void {
     self.memory.deinit();
 }
 
+/// Returns the current EVM revision.
+/// Panics if neither `rev` nor `dyn_rev` is set.
+pub inline fn revision(self: *Self) Rev {
+    return self.rev;
+}
+
 /// Returns the current program counter.
 pub fn pc(self: *Self) usize {
     return @intFromPtr(self.ip) - @intFromPtr(self.bytecode.ptr);
 }
 
 /// Runs the instruction loop until completion.
+/// Panics if neither `rev` nor `dyn_rev` is set.
 pub fn run(self: *Self) InstructionResult {
+    debug("rev: {s}", .{@tagName(self.revision())});
+
     var c: usize = 0;
     const res = while (true) {
         if (c > 10000) {
@@ -132,13 +148,26 @@ pub fn returnValue(self: *Self) []u8 {
     return self.memory.getSlice(self.return_offset, self.return_len);
 }
 
-pub fn memResize(self: *Self, offset: usize, len: usize) !void {
-    const new_len = next32(offset +| len) catch return InstructionResult.MemoryOOG;
+/// Resizes the memory to `offset + len`, recording a memory expansion cost if necessary.
+pub inline fn resizeMemory(self: *Self, offset: usize, len: usize) !void {
+    const new_len, const overflow = @addWithOverflow(offset, len);
+    if (overflow != 0) return InstructionResult.MemoryOOG;
+    if (new_len <= self.memory.len()) return;
+    const rounded_size = next32(new_len);
     // TODO: memory limit
-    if (new_len > self.memory.len()) {
-        // TODO: gas
-        self.memory.resize(new_len) catch @panic("OOM");
-    }
+    const num_words = rounded_size / 32;
+    if (!self.gas.recordMemory(num_words)) return InstructionResult.MemoryOOG;
+    self.memory.resize(rounded_size) catch @panic("OOM");
+}
+
+/// Records a gas cost.
+pub inline fn recordGas(self: *Self, cost: u64) !void {
+    if (!self.gas.recordCost(cost)) return InstructionResult.OutOfGas;
+}
+
+/// Records a gas cost.
+pub inline fn recordGasOpt(self: *Self, cost: ?u64) !void {
+    return if (cost) |g| self.recordGas(g) else InstructionResult.OutOfGas;
 }
 
 pub fn dumpReturnValue(self: *Self) void {
@@ -147,15 +176,23 @@ pub fn dumpReturnValue(self: *Self) void {
     utils.dumpSlice(self.returnValue());
 }
 
-fn next32(x: usize) !usize {
-    var r = x;
-    r &= 31;
-    r +%= 1;
-    r = ~r;
-    r &= 31;
-    return std.math.add(usize, x, r);
+fn next32(x: usize) usize {
+    return switch (x % 32) {
+        0 => x,
+        else => |y| x +| (32 - y),
+    };
 }
 
 test {
     std.testing.refAllDecls(@This());
+}
+
+test next32 {
+    try expectEqual(next32(0), 0);
+    try expectEqual(next32(1), 32);
+    try expectEqual(next32(2), 32);
+    try expectEqual(next32(31), 32);
+    try expectEqual(next32(32), 32);
+    try expectEqual(next32(33), 64);
+    try expectEqual(next32(std.math.maxInt(usize)), std.math.maxInt(usize));
 }

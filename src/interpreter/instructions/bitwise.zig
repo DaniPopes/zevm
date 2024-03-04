@@ -3,29 +3,35 @@ const little_endian = @import("builtin").cpu.arch.endian() == .little;
 
 const Interpreter = @import("../Interpreter.zig");
 const utils = @import("utils.zig");
+const gas = Interpreter.gas;
 const InstructionResult = Interpreter.InstructionResult;
 
 pub fn bitand(int: *Interpreter) !void {
+    try int.recordGas(gas.verylow);
     const value, const top = try int.stack.popTop();
     top.* = value & top.*;
 }
 
 pub fn bitor(int: *Interpreter) !void {
+    try int.recordGas(gas.verylow);
     const value, const top = try int.stack.popTop();
     top.* = value | top.*;
 }
 
 pub fn bitxor(int: *Interpreter) !void {
+    try int.recordGas(gas.verylow);
     const value, const top = try int.stack.popTop();
     top.* = value ^ top.*;
 }
 
 pub fn bitnot(int: *Interpreter) !void {
+    try int.recordGas(gas.verylow);
     const top = try int.stack.top();
     top.* = ~top.*;
 }
 
 pub fn byte(int: *Interpreter) !void {
+    try int.recordGas(gas.verylow);
     const value, const top = try int.stack.popTop();
     var byte_idx = utils.castSaturate(usize, value);
     if (byte_idx < 32) {
@@ -41,6 +47,7 @@ pub fn byte(int: *Interpreter) !void {
 }
 
 pub fn shl(int: *Interpreter) !void {
+    try int.recordGas(gas.verylow);
     const value, const top = try int.stack.popTop();
     if (top.* < 256) {
         top.* = value << @as(u8, @intCast(top.*));
@@ -50,6 +57,7 @@ pub fn shl(int: *Interpreter) !void {
 }
 
 pub fn shr(int: *Interpreter) !void {
+    try int.recordGas(gas.verylow);
     const value, const top = try int.stack.popTop();
     if (top.* < 256) {
         top.* = value >> @as(u8, @intCast(top.*));
@@ -59,6 +67,7 @@ pub fn shr(int: *Interpreter) !void {
 }
 
 pub fn sar(int: *Interpreter) !void {
+    try int.recordGas(gas.verylow);
     const value_, const top = try int.stack.popTop();
     const value = @as(i256, @bitCast(value_));
     if (top.* < 256) {

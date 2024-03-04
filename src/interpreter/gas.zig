@@ -1,6 +1,9 @@
 //! Gas cost constants and functions.
 
 const std = @import("std");
+const expectEqual = std.testing.expectEqual;
+
+const Rev = @import("../rev.zig").Rev;
 
 // Taken directly from the [Yellow Paper Appending G](https://ethereum.github.io/yellowpaper/paper.pdf).
 
@@ -77,6 +80,7 @@ pub const copy: u64 = 3;
 /// Payment for each `BLOCKHASH` operation.
 pub const blockhash: u64 = 20;
 
+/// Represents the state of gas during execution.
 pub const Gas = struct {
     /// The initial gas limit.
     limit: u64,
@@ -100,6 +104,11 @@ pub const Gas = struct {
         };
     }
 
+    /// Returns all the gas used in the execution.
+    pub fn spent(self: *Gas) u64 {
+        return self.all_used_gas;
+    }
+
     /// Returns the amount of gas remaining.
     pub fn remaining(self: *Gas) u64 {
         return self.limit - self.used;
@@ -108,7 +117,7 @@ pub const Gas = struct {
     /// Records an explicit cost.
     ///
     /// Returns `false` if the gas limit is exceeded.
-    pub fn record_cost(self: *Gas, cost: u64) bool {
+    pub fn recordCost(self: *Gas, cost: u64) bool {
         const all_used_gas = self.all_used_gas +| cost;
         if (self.limit < all_used_gas) {
             return false;
@@ -119,17 +128,90 @@ pub const Gas = struct {
         return true;
     }
 
+    /// Records gas for memory expansion for the given number of 32-byte words.
+    pub fn recordMemory(self: *Gas, num_words: u64) bool {
+        const gas_memory = memoryGas(num_words);
+        if (gas_memory > self.memory) {
+            const all_used_gas = self.used +| gas_memory;
+            if (self.limit < all_used_gas) {
+                return false;
+            }
+            self.memory = gas_memory;
+            self.all_used_gas = all_used_gas;
+        }
+        return true;
+    }
+
     /// Records a refund value.
     ///
     /// `refund` can be negative but `self.refunded` should always be positive
     /// at the end of transact.
-    pub fn record_refund(self: *Gas, refund: i64) void {
+    pub fn recordRefund(self: *Gas, refund: i64) void {
         self.refunded += refund;
     }
 
     /// Erases a gas cost from the totals.
-    pub fn erase_cost(self: *Gas, returned: u64) void {
+    pub fn eraseCost(self: *Gas, returned: u64) void {
         self.used -= returned;
         self.all_used_gas -= returned;
     }
+
+    /// Sets a refund value for the final refund.
+    ///
+    /// The nax refund value is limited to the `n`th part (depending of fork) of gas spent.
+    ///
+    /// See also [EIP-3529: Reduction in refunds](https://eips.ethereum.org/EIPS/eip-3529).
+    pub fn setFinalRefund(self: *Gas, rev: Rev) void {
+        const max_refund_quotient = if (rev.enabled(.london)) 5 else 2;
+        self.refunded = @min(self.refunded, @as(i64, @intCast(self.spent() / max_refund_quotient)));
+    }
 };
+
+inline fn memoryGas(num_words: usize) u64 {
+    const x = @as(u64, @intCast(num_words));
+    return (memory *| x) +| ((x *| x) / 512);
+}
+
+pub inline fn expCost(power: u256, rev: Rev) ?u64 {
+    if (power == 0) return exp;
+    // EIP-160: EXP cost increase
+    const gas_byte: u64 = if (rev.enabled(.spurious_dragon)) 50 else 10;
+    const l = @as(u256, @intCast(exp));
+    const r = checkedMul(gas_byte, log2floor(power) / 8 + 1) orelse return null;
+    const gas = checkedAdd(l, @intCast(r)) orelse return null;
+    return std.math.cast(u64, gas);
+}
+
+fn log2floor(value: u256) u64 {
+    std.debug.assert(value != 0);
+    return std.math.log2_int(u256, value);
+}
+
+pub inline fn copyCost(len: u64) ?u64 {
+    return checkedAdd(verylow, costPerWord(len, copy) orelse return null);
+}
+
+pub inline fn keccak256Cost(len: u64) ?u64 {
+    return checkedAdd(keccak256, costPerWord(len, keccak256word) orelse return null);
+}
+
+inline fn costPerWord(len: u64, multiple: u64) ?u64 {
+    const b = std.math.divCeil(u64, len, 32) catch unreachable;
+    return checkedMul(multiple, b);
+}
+
+inline fn checkedAdd(a: anytype, b: @TypeOf(a)) ?@TypeOf(a) {
+    const x, const overflow = @addWithOverflow(a, b);
+    return if (overflow != 0) null else x;
+}
+
+inline fn checkedMul(a: anytype, b: @TypeOf(a)) ?@TypeOf(a) {
+    const x, const overflow = @mulWithOverflow(a, b);
+    return if (overflow != 0) null else x;
+}
+
+test memoryGas {
+    _ = memoryGas(std.math.maxInt(u32));
+    _ = memoryGas(std.math.maxInt(u64) / 32);
+    _ = memoryGas(std.math.maxInt(u64));
+}

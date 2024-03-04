@@ -78,14 +78,13 @@ pub const Rev = enum(c_int) {
     /// The future next revision after Cancun.
     prague = evmc.EVMC_PRAGUE,
 
-    // /// The maximum EVM revision supported.
-    // max = evmc.EVMC_PRAGUE,
+    /// The maximum EVM revision supported.
+    pub const max = Rev.prague;
 
     /// The latest known EVM revision with finalized specification.
     ///
     /// This is handy for EVM tools to always use the latest revision available.
-    // latest = evmc.EVMC_SHANGHAI,
-    latest = 255,
+    pub const latest = Rev.cancun;
 
     /// Returns `true` if the given revision is enabled in this revision.
     pub inline fn enabled(self: Rev, other: Rev) bool {

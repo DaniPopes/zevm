@@ -28,9 +28,6 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    std.log.debug("{}", .{evmc.EVMC_PRAGUE});
-    _ = evmc.struct_evmc_result{};
-
     var bytecode: []const u8 = undefined;
     if (args.len >= 2) {
         const arg = args[1];
@@ -47,7 +44,7 @@ pub fn main() !void {
         bytecode = DEFAULT_BYTECODE;
     }
 
-    var int = try Interpreter.init(bytecode, allocator);
+    var int = try Interpreter.init(allocator, bytecode, 100);
     defer int.deinit();
     _ = int.run() catch {};
     int.dumpReturnValue();

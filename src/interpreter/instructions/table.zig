@@ -94,7 +94,7 @@ pub const TABLE: [256]InstructionPtr = init: {
             // .TLOAD => todo.tload,
             .MCOPY => memory.mcopy,
 
-            .PUSH0 => stack.push(0),
+            .PUSH0 => stack.push0,
             .PUSH1 => stack.push(1),
             .PUSH2 => stack.push(2),
             .PUSH3 => stack.push(3),
