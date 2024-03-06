@@ -4,6 +4,11 @@
 
 Inspired by [REVM](https://github.com/bluealloy/revm).
 
+> [!IMPORTANT]
+> This is just a simple proof of concept I did to learn Zig.
+> Instructions, gas metering, host interface, revisions, etc. are either incomplete or not implemented at all.
+> Maybe one day I will finish this.
+
 ## Usage
 
 Tested with Zig `0.12.0-dev.3123+147beec7d`, should work with any Zig 0.12 version.
