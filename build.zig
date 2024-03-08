@@ -32,7 +32,7 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("evmc", evmc_module);
 
-    if (emit and !(use_llvm orelse true)) { // TODO: non-LLVM doesn't emit assembly
+    if (emit and (use_llvm orelse true)) { // TODO: non-LLVM doesn't emit assembly
         const install_asm = b.addInstallFile(exe.getEmittedAsm(), name ++ ".s");
         b.getInstallStep().dependOn(&install_asm.step);
 
