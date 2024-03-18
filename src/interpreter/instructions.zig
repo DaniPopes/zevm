@@ -1,18 +1,18 @@
 const std = @import("std");
 
-const Interpreter = @import("../Interpreter.zig");
+const Interpreter = @import("./Interpreter.zig");
 const InstructionPtr = Interpreter.InstructionPtr;
 const Opcode = Interpreter.Opcode;
 
 /// The instruction lookup table.
 pub const TABLE: [256]InstructionPtr = init: {
-    const arithmetic = @import("arithmetic.zig");
-    const bitwise = @import("bitwise.zig");
-    const comparison = @import("comparison.zig");
-    const control = @import("control.zig");
-    const hash = @import("hash.zig");
-    const memory = @import("memory.zig");
-    const stack = @import("stack.zig");
+    const arithmetic = @import("instructions/arithmetic.zig");
+    const bitwise = @import("instructions/bitwise.zig");
+    const comparison = @import("instructions/comparison.zig");
+    const control = @import("instructions/control.zig");
+    const hash = @import("instructions/hash.zig");
+    const memory = @import("instructions/memory.zig");
+    const stack = @import("instructions/stack.zig");
 
     var map: [256]InstructionPtr = undefined;
     // TODO: remaining instructions

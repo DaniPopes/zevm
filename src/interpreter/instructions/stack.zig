@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 
 const Interpreter = @import("../Interpreter.zig");
 const gas = Interpreter.gas;
-const Instruction = Interpreter.InstructionPtr;
+const Instruction = Interpreter.Instruction;
 const InstructionResult = Interpreter.InstructionResult;
 const utils = @import("utils.zig");
 
@@ -18,13 +18,12 @@ pub fn push0(int: *Interpreter) !void {
 }
 
 pub fn push(comptime n: comptime_int) Instruction {
-    if (n == 0 or n > 32) {
-        @compileError("invalid push instruction");
-    }
+    if (n == 0) @compileError("use `push0` instead");
+    if (n > 32) @compileError("invalid push instruction");
 
     const pushT = struct {
         fn push(int: *Interpreter) !void {
-            asmComment(std.fmt.comptimePrint("push{}", .{n}));
+            asmComment(std.fmt.comptimePrint("PUSH{}", .{n}));
             try int.recordGas(gas.verylow);
             const toPush = try int.readBytes(n);
             var padded: [32]u8 = comptime [_]u8{0} ** 32;
@@ -37,13 +36,11 @@ pub fn push(comptime n: comptime_int) Instruction {
 }
 
 pub fn dup(comptime n: comptime_int) Instruction {
-    if (n == 0 or n > 16) {
-        @compileError("invalid dup instruction");
-    }
+    if (n == 0 or n > 16) @compileError("invalid dup instruction");
 
     const dupT = struct {
         fn dup(int: *Interpreter) !void {
-            asmComment(std.fmt.comptimePrint("dup{}", .{n}));
+            asmComment(std.fmt.comptimePrint("DUP{}", .{n}));
             try int.recordGas(gas.verylow);
             return int.stack.dup(n);
         }
@@ -52,14 +49,12 @@ pub fn dup(comptime n: comptime_int) Instruction {
 }
 
 pub fn swap(comptime n: comptime_int) Instruction {
-    if (n == 0 or n > 16) {
-        @compileError("invalid swap instruction");
-    }
+    if (n == 0 or n > 16) @compileError("invalid swap instruction");
 
     const swapT = struct {
         fn swap(int: *Interpreter) !void {
+            asmComment(std.fmt.comptimePrint("SWAP{}", .{n}));
             try int.recordGas(gas.verylow);
-            asmComment(std.fmt.comptimePrint("swap{}", .{n}));
             return int.stack.swap(n);
         }
     };

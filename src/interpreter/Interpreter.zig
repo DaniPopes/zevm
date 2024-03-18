@@ -5,7 +5,7 @@ const debug = std.log.debug;
 const Allocator = std.mem.Allocator;
 const expectEqual = std.testing.expectEqual;
 
-const table = @import("instructions/table.zig");
+const instructions = @import("instructions.zig");
 const utils = @import("utils.zig");
 pub const InstructionResult = @import("result.zig").InstructionResult;
 pub const Memory = @import("Memory.zig");
@@ -104,7 +104,7 @@ pub fn step(self: *Self) !void {
 
         debug("{: >4}: 0x{X:0>2} {s} {}", .{ self.pc(), opcode, @tagName(as_enum), data });
     }
-    return table.TABLE[opcode](self);
+    return instructions.TABLE[opcode](self);
 }
 
 /// Reads one byte from the bytecode.

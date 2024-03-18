@@ -105,19 +105,19 @@ pub const Gas = struct {
     }
 
     /// Returns all the gas used in the execution.
-    pub fn spent(self: *Gas) u64 {
+    pub fn spent(self: *const Gas) u64 {
         return self.all_used_gas;
     }
 
     /// Returns the amount of gas remaining.
-    pub fn remaining(self: *Gas) u64 {
+    pub fn remaining(self: *const Gas) u64 {
         return self.limit - self.used;
     }
 
     /// Records an explicit cost.
     ///
     /// Returns `false` if the gas limit is exceeded.
-    pub fn recordCost(self: *Gas, cost: u64) bool {
+    pub inline fn recordCost(self: *Gas, cost: u64) bool {
         const all_used_gas = self.all_used_gas +| cost;
         if (self.limit < all_used_gas) {
             return false;
@@ -195,9 +195,10 @@ pub inline fn keccak256Cost(len: u64) ?u64 {
     return checkedAdd(keccak256, costPerWord(len, keccak256word) orelse return null);
 }
 
-inline fn costPerWord(len: u64, multiple: u64) ?u64 {
-    const b = std.math.divCeil(u64, len, 32) catch unreachable;
-    return checkedMul(multiple, b);
+inline fn costPerWord(len: u64, comptime multiple: u64) ?u64 {
+    const d = len / 32;
+    const r = len % 32;
+    return checkedMul(multiple, if (r == 0) d else d + 1);
 }
 
 inline fn checkedAdd(a: anytype, b: @TypeOf(a)) ?@TypeOf(a) {
