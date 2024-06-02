@@ -11,7 +11,7 @@ Inspired by [REVM](https://github.com/bluealloy/revm).
 
 ## Usage
 
-Tested with Zig `0.12.0-dev.3123+147beec7d`, should work with any Zig 0.12 version.
+Tested with Zig `0.12.0`.
 
 - Run:
 ```sh
