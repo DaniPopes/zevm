@@ -32,6 +32,11 @@ pub inline fn init() Self {
     };
 }
 
+/// Clears the stack.
+pub fn clear(self: *Self) void {
+    self.len = 0;
+}
+
 /// Returns the slice of the stack's initialized data.
 pub inline fn dataSlice(self: *Self) []const u256 {
     return self.data[0..self.len];

@@ -4,6 +4,7 @@ const std = @import("std");
 const debug = std.log.debug;
 const Allocator = std.mem.Allocator;
 const expectEqual = std.testing.expectEqual;
+const evmc = @import("evmc");
 
 const instructions = @import("instructions.zig");
 const utils = @import("utils.zig");
@@ -13,6 +14,7 @@ pub const Opcode = @import("opcode.zig").Opcode;
 pub const Stack = @import("Stack.zig");
 pub const gas = @import("gas.zig");
 pub const Gas = gas.Gas;
+const Host = @import("../vm/Vm.zig").Host;
 const Rev = @import("../rev.zig").Rev;
 
 /// The instruction function type.
@@ -20,41 +22,41 @@ pub const Instruction = fn (*Self) InstructionResult!void;
 /// The instruction function pointer type.
 pub const InstructionPtr = *const Instruction;
 
-/// The bytecode slice.
-bytecode: []const u8,
 /// The current instruction pointer. This always points into `bytecode`.
 ip: [*]const u8,
 /// The gas state.
 gas: Gas,
-/// The stack.
-stack: Stack,
+/// The EVM revision.
+rev: Rev,
+/// The host.
+host: Host,
 /// The memory.
 memory: Memory,
+/// The bytecode slice.
+bytecode: []const u8,
 /// The offset into `memory` of the return data.
 ///
 /// This value must be ignored if `return_len` is 0.
 return_offset: usize,
 /// The length of the return data.
 return_len: usize,
-
-/// The EVM revision.
-rev: Rev = Rev.latest,
+/// The stack.
+stack: Stack,
 
 const Self = @This();
 
-/// Creates a new interpreter.
-pub fn init(allocator: Allocator, bytecode: []const u8, gas_limit: u64) !Self {
-    if (bytecode.len == 0) {
-        return error.EmptyBytecode;
-    }
+/// Creates a new interpreter. Only allocates the memory. Use `reset` to initialize.
+pub fn init(allocator: Allocator) !Self {
     return .{
-        .bytecode = bytecode,
-        .ip = bytecode.ptr,
-        .gas = Gas.init(gas_limit),
-        .stack = Stack.init(),
+        .bytecode = undefined,
+        .ip = undefined,
+        .gas = undefined,
+        .stack = undefined,
         .memory = try Memory.init(allocator),
-        .return_offset = 0,
-        .return_len = 0,
+        .return_offset = undefined,
+        .return_len = undefined,
+        .rev = undefined,
+        .host = undefined,
     };
 }
 
@@ -62,8 +64,24 @@ pub fn deinit(self: *Self) void {
     self.memory.deinit();
 }
 
+pub fn reset(self: *Self, msg: *const evmc.evmc_message, rev: Rev, host: Host, code: []const u8) void {
+    self.bytecode = code;
+    self.ip = code.ptr;
+    self.gas = Gas.init(@intCast(msg.gas));
+    self.stack.clear();
+    self.memory.clear();
+    self.return_offset = 0;
+    self.return_len = 0;
+    self.rev = rev;
+    self.host = host;
+}
+
+/// Returns the allocator.
+pub fn getAllocator(self: *Self) Allocator {
+    return self.memory.inner.allocator;
+}
+
 /// Returns the current EVM revision.
-/// Panics if neither `rev` nor `dyn_rev` is set.
 pub inline fn revision(self: *Self) Rev {
     return self.rev;
 }
@@ -74,7 +92,6 @@ pub fn pc(self: *Self) usize {
 }
 
 /// Runs the instruction loop until completion.
-/// Panics if neither `rev` nor `dyn_rev` is set.
 pub fn run(self: *Self) InstructionResult {
     debug("rev: {s}", .{@tagName(self.revision())});
 
@@ -184,7 +201,7 @@ fn next32(x: usize) usize {
 }
 
 test {
-    std.testing.refAllDecls(@This());
+    std.testing.refAllDeclsRecursive(@This());
 }
 
 test next32 {

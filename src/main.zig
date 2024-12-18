@@ -1,11 +1,14 @@
 const std = @import("std");
 
+/// EVMC: Ethereum Client-VM Connector API
+pub const evmc = @import("evmc");
+
+pub const primitives = @import("primitives.zig");
 pub const Interpreter = @import("interpreter/Interpreter.zig");
 pub const Rev = @import("rev.zig").Rev;
 const Opcode = Interpreter.Opcode;
 
-/// EVMC: Ethereum Client-VM Connector API
-pub const evmc = @import("evmc");
+pub const Vm = @import("vm/Vm.zig");
 
 const std_options = struct {
     pub const log_level = .debug;
@@ -44,12 +47,30 @@ pub fn main() !void {
         bytecode = DEFAULT_BYTECODE;
     }
 
-    var int = try Interpreter.init(allocator, bytecode, 100);
-    defer int.deinit();
-    _ = int.run() catch {};
-    int.dumpReturnValue();
-    int.stack.dump();
-    int.memory.dump();
+    var host = try Vm.Host.dummy(allocator);
+    defer host.deinit();
+    var vm = try Vm.init(allocator);
+    defer vm.deinit();
+    const msg = evmc.evmc_message{
+        .kind = evmc.EVMC_CALL,
+        // .flags = evmc.EVMC_STATIC,
+        .depth = 0,
+        .gas = 1000,
+        // .recipient = ,
+        // .sender = ,
+        // .input_data = ,
+        // .input_size = ,
+        // .value = ,
+        // .create2_salt = ,
+        // .code_address = ,
+        .code = bytecode.ptr,
+        .code_size = bytecode.len,
+    };
+    const result = vm.execute(host.host(), Rev.latest, &msg, bytecode);
+    std.log.debug("result: {}", .{result});
+    vm.frames.items[0].interpreter.dumpReturnValue();
+    vm.frames.items[0].interpreter.stack.dump();
+    vm.frames.items[0].interpreter.memory.dump();
 }
 
 fn op(opcode: Opcode) u8 {
@@ -57,5 +78,6 @@ fn op(opcode: Opcode) u8 {
 }
 
 test {
+    // Can't be recursive because of "dependency loop detected" in `evmc` bindings.
     std.testing.refAllDecls(@This());
 }

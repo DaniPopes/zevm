@@ -82,6 +82,7 @@ pub const blockhash: u64 = 20;
 
 /// Represents the state of gas during execution.
 pub const Gas = struct {
+    // TODO: Refactor from revm https://github.com/bluealloy/revm/blob/64f38434101be5f131b621124c122b5676b92b28/crates/interpreter/src/gas.rs#L12
     /// The initial gas limit.
     limit: u64,
     /// The total used gas.
@@ -162,7 +163,7 @@ pub const Gas = struct {
     ///
     /// See also [EIP-3529: Reduction in refunds](https://eips.ethereum.org/EIPS/eip-3529).
     pub fn setFinalRefund(self: *Gas, rev: Rev) void {
-        const max_refund_quotient = if (rev.enabled(.london)) 5 else 2;
+        const max_refund_quotient: u64 = if (rev.enabled(.london)) 5 else 2;
         self.refunded = @min(self.refunded, @as(i64, @intCast(self.spent() / max_refund_quotient)));
     }
 };
