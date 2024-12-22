@@ -97,7 +97,7 @@ pub fn run(self: *Self) InstructionResult {
 
     var c: usize = 0;
     const res = while (true) {
-        if (c > 10000) {
+        if (c > 100_000) {
             std.log.warn("execution taking too long, breaking", .{});
             break InstructionResult.OutOfGas;
         }
@@ -113,13 +113,11 @@ pub fn run(self: *Self) InstructionResult {
 pub fn step(self: *Self) !void {
     const opcode = try self.nextByte();
     if (std.log.defaultLogEnabled(.debug)) {
-        var as_enum = @as(Opcode, @enumFromInt(opcode));
-
-        var data_: []const u8 = &[0]u8{};
-        if (as_enum.isPush()) |n| data_ = self.ip[0..n];
-        const data = std.fmt.fmtSliceHexLower(data_);
-
-        debug("{: >4}: 0x{X:0>2} {s} {}", .{ self.pc(), opcode, @tagName(as_enum), data });
+        const opcode_ = @as(Opcode, @enumFromInt(opcode));
+        const imm = opcode_.immSize();
+        const zerox = if (imm == 0) "" else "0x";
+        const data = std.fmt.fmtSliceHexLower(self.ip[0..imm]);
+        debug("{: >4}: {s} {s}{}", .{ self.pc(), opcode_.name(), zerox, data });
     }
     return instructions.TABLE[opcode](self);
 }
@@ -169,12 +167,16 @@ pub fn returnValue(self: *Self) []u8 {
 pub inline fn resizeMemory(self: *Self, offset: usize, len: usize) !void {
     const new_len, const overflow = @addWithOverflow(offset, len);
     if (overflow != 0) return InstructionResult.MemoryOOG;
-    if (new_len <= self.memory.len()) return;
+    if (new_len > self.memory.len()) return self.resizeMemoryCold(new_len);
+}
+
+fn resizeMemoryCold(self: *Self, new_len: usize) !void {
+    @setCold(true);
     const rounded_size = next32(new_len);
     // TODO: memory limit
     const num_words = rounded_size / 32;
     if (!self.gas.recordMemory(num_words)) return InstructionResult.MemoryOOG;
-    self.memory.resize(rounded_size) catch @panic("OOM");
+    self.memory.resize(rounded_size) catch return InstructionResult.MemoryOOG;
 }
 
 /// Records a gas cost.

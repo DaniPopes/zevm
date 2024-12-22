@@ -259,8 +259,8 @@ pub const Opcode = enum(u8) {
     // 0xEA
     // 0xEB
 
-    CREATE3 = 0xEC,
-    CREATE4 = 0xED,
+    EOFCREATE = 0xEC,
+    // 0xED
     RETURNCONTRACT = 0xEE,
     // 0xEF
 
@@ -285,22 +285,20 @@ pub const Opcode = enum(u8) {
     _,
 
     /// Maps each opcode to its name.
-    pub const names: [256]?[]const u8 = init: {
-        var map = [_]?[]const u8{null} ** 256;
+    pub const names: [256][]const u8 = init: {
+        var map: [256][]const u8 = undefined;
+        for (0..256) |i| {
+            map[i] = std.fmt.comptimePrint("UNKNOWN(0x{X:0>2})", .{i});
+        }
         for (@typeInfo(Opcode).Enum.fields) |variant| {
             map[variant.value] = variant.name;
         }
         break :init map;
     };
 
-    /// Returns whether `value` is a valid opcode.
-    pub fn isValid(value: u8) bool {
-        return Opcode.names[value] != null;
-    }
-
     /// Returns the name of this opcode.
     pub fn name(self: Opcode) []const u8 {
-        return Opcode.names[@intFromEnum(self)].?;
+        return Opcode.names[@intFromEnum(self)];
     }
 
     /// Returns the number of bytes of this push opcode, or `null`.
@@ -313,17 +311,16 @@ pub const Opcode = enum(u8) {
             else => null,
         };
     }
-};
 
-test "opcode maps" {
-    for (Opcode.names, 0..) |name, i| {
-        const is_valid = name != null;
-        try expectEqual(Opcode.isValid(@intCast(i)), is_valid);
-        if (is_valid) {
-            try expect(std.mem.eql(u8, Opcode.name(@enumFromInt(i)), name.?));
-        }
+    /// Returns the byte size of the immediate value of this opcode.
+    pub fn immSize(self: Opcode) u8 {
+        return switch (self) {
+            .RJUMPV, .DUPN, .SWAPN, .EXCHANGE, .EOFCREATE, .RETURNCONTRACT => 1,
+            .DATALOADN, .RJUMP, .RJUMPI => 2,
+            else => if (self.isPush()) |p| p else 0,
+        };
     }
-}
+};
 
 test "opcode isPush" {
     try expectEqual(Opcode.MCOPY.isPush(), null);

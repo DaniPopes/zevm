@@ -6,3 +6,4 @@ zig-out
 *.o
 /main
 /zevm
+tmp

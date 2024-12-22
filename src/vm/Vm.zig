@@ -36,7 +36,7 @@ pub fn execute(self: *Vm, host: Host, rev: Rev, msg: *const evmc.evmc_message, c
         const prev_len = self.frames.items.len;
         self.frames.items.len = depth + 1;
         for (self.frames.items[prev_len..]) |*frame| {
-            frame.interpreter = Interpreter.init(self.allocator) catch @panic("OOM"); // TODO
+            frame.interpreter = Interpreter.init(self.allocator) catch return .{ .status_code = .out_of_memory };
         }
     }
     var frame = &self.frames.items[depth];
@@ -45,7 +45,7 @@ pub fn execute(self: *Vm, host: Host, rev: Rev, msg: *const evmc.evmc_message, c
     const status_code = Result.StatusCode.fromInterpreter(ir);
     return .{
         .status_code = status_code,
-        .gas_left = if (status_code == .success or status_code == .revert) @intCast(frame.interpreter.gas.remaining()) else 0,
+        .gas_left = if (status_code == .success or status_code == .revert) @intCast(frame.interpreter.gas.remaining) else 0,
         .gas_refund = if (status_code == .success) frame.interpreter.gas.refunded else 0,
         .output = frame.interpreter.returnValue(),
     };

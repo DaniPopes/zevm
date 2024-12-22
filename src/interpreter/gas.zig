@@ -82,64 +82,59 @@ pub const blockhash: u64 = 20;
 
 /// Represents the state of gas during execution.
 pub const Gas = struct {
-    // TODO: Refactor from revm https://github.com/bluealloy/revm/blob/64f38434101be5f131b621124c122b5676b92b28/crates/interpreter/src/gas.rs#L12
-    /// The initial gas limit.
+    /// The remaining gas.
+    remaining: u64,
+    /// The initial gas limit. This is constant throughout execution.
     limit: u64,
-    /// The total used gas.
-    all_used_gas: u64,
-    /// Used gas without memory expansion.
-    used: u64,
-    /// Used gas for memory expansion.
-    memory: u64,
     /// Refunded gas. This is used only at the end of execution.
     refunded: i64,
+    /// The current gas used for memory expansion.
+    memory: u64,
 
     /// Creates a new `Gas` struct with the given gas limit.
     pub inline fn init(limit: u64) Gas {
         return .{
             .limit = limit,
-            .all_used_gas = 0,
-            .used = 0,
-            .memory = 0,
+            .remaining = limit,
             .refunded = 0,
+            .memory = 0,
+        };
+    }
+
+    /// Creates a new `Gas` struct with the given gas limit, but without any gas remaining.
+    pub inline fn initSpent(limit: u64) Gas {
+        return .{
+            .limit = limit,
+            .remaining = 0,
+            .refunded = 0,
+            .memory = 0,
         };
     }
 
     /// Returns all the gas used in the execution.
     pub fn spent(self: *const Gas) u64 {
-        return self.all_used_gas;
-    }
-
-    /// Returns the amount of gas remaining.
-    pub fn remaining(self: *const Gas) u64 {
-        return self.limit - self.used;
+        return self.limit - self.remaining;
     }
 
     /// Records an explicit cost.
     ///
     /// Returns `false` if the gas limit is exceeded.
     pub inline fn recordCost(self: *Gas, cost: u64) bool {
-        const all_used_gas = self.all_used_gas +| cost;
-        if (self.limit < all_used_gas) {
-            return false;
-        }
-
-        self.used += cost;
-        self.all_used_gas = all_used_gas;
-        return true;
+        const remaining_, const overflow = @subWithOverflow(self.remaining, cost);
+        const success = overflow == 0;
+        if (success) self.remaining = remaining_;
+        return success;
     }
 
     /// Records gas for memory expansion for the given number of 32-byte words.
-    pub fn recordMemory(self: *Gas, num_words: u64) bool {
-        const gas_memory = memoryGas(num_words);
-        if (gas_memory > self.memory) {
-            const all_used_gas = self.used +| gas_memory;
-            if (self.limit < all_used_gas) {
-                return false;
-            }
-            self.memory = gas_memory;
-            self.all_used_gas = all_used_gas;
+    pub fn recordMemory(self: *Gas, num_words: usize) bool {
+        const new_cost = memoryGas(num_words);
+        const old_cost = self.memory;
+        if (new_cost > old_cost) {
+            self.memory = new_cost;
+            return self.recordCost(new_cost - old_cost);
         }
+        // This can only be reached with a very high gas limit and a very large memory expansion.
         return true;
     }
 
@@ -153,8 +148,12 @@ pub const Gas = struct {
 
     /// Erases a gas cost from the totals.
     pub fn eraseCost(self: *Gas, returned: u64) void {
-        self.used -= returned;
-        self.all_used_gas -= returned;
+        self.remaining += returned;
+    }
+
+    /// Spends all remaining gas.
+    pub fn spendAll(self: *Gas) void {
+        self.remaining = 0;
     }
 
     /// Sets a refund value for the final refund.
