@@ -72,6 +72,7 @@ pub fn addmod(int: *Interpreter) !void {
 pub fn mulmod(int: *Interpreter) !void {
     try int.recordGas(gas.mid);
     // TODO
+    return InstructionResult.InvalidOperandOOG;
 }
 
 pub fn exp(int: *Interpreter) !void {

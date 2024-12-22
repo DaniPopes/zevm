@@ -5,7 +5,7 @@ const evmc = @import("evmc");
 ///
 /// The revision of the EVM specification based on the Ethereum
 /// upgrade / hard fork codenames.
-pub const Rev = enum(c_int) {
+pub const Rev = enum(evmc.enum_evmc_revision) {
     /// The Frontier revision.
     ///
     /// The one Ethereum launched with.
@@ -78,13 +78,18 @@ pub const Rev = enum(c_int) {
     /// The future next revision after Cancun.
     prague = evmc.EVMC_PRAGUE,
 
+    /// The Osaka revision.
+    ///
+    /// The future next revision after Prague.
+    osaka = evmc.EVMC_OSAKA,
+
     /// The maximum EVM revision supported.
-    pub const max = Rev.prague;
+    pub const max = @as(Rev, @enumFromInt(evmc.EVMC_MAX_REVISION));
 
     /// The latest known EVM revision with finalized specification.
     ///
     /// This is handy for EVM tools to always use the latest revision available.
-    pub const latest = Rev.cancun;
+    pub const latest = @as(Rev, @enumFromInt(evmc.EVMC_LATEST_STABLE_REVISION));
 
     /// Returns `true` if the given revision is enabled in this revision.
     pub inline fn enabled(self: Rev, other: Rev) bool {

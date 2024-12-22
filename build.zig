@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const evmc = b.addTranslateC(.{
-        .root_source_file = .{ .path = "evmc/include/evmc/evmc.h" },
+        .root_source_file = b.path("evmc/include/evmc/evmc.h"),
         .target = target,
         .optimize = optimize,
         .link_libc = false,
@@ -23,7 +23,7 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = name,
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
         .use_lld = use_llvm,
@@ -73,7 +73,7 @@ pub fn build(b: *std.Build) void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const unit_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });

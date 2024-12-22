@@ -2,7 +2,7 @@ const std = @import("std");
 const debug = std.log.debug;
 const defaultLogEnabled = std.log.defaultLogEnabled;
 
-pub fn dumpSlice(slice: []u8) void {
+pub fn dumpSlice(slice: []const u8) void {
     if (!defaultLogEnabled(.debug) or slice.len == 0) return;
     var i: usize = 0;
     while (i < slice.len) {
@@ -15,6 +15,6 @@ pub fn dumpSlice(slice: []u8) void {
     }
 }
 
-fn logSlice32(i: usize, slice: []u8) void {
+fn logSlice32(i: usize, slice: []const u8) void {
     debug("0x{: >4}: 0x{:0>64}", .{ i, std.fmt.fmtSliceHexLower(slice) });
 }
