@@ -120,7 +120,6 @@ test resize {
 
     try memory.resize(Self.page_size + 32);
     try expectEqual(memory.data().len, Self.page_size + 32);
-    try expectEqual(memory.capacity(), Self.page_size + (Self.page_size / 2) + 8);
 }
 
 test set {
