@@ -9,7 +9,7 @@ const expectEqualSlices = std.testing.expectEqualSlices;
 const utils = @import("utils.zig");
 
 const Self = @This();
-const Inner = std.ArrayList(u8);
+const Inner = std.array_list.Managed(u8);
 
 inner: Inner,
 

@@ -2,7 +2,7 @@ const std = @import("std");
 
 const utils = @import("utils.zig");
 const Interpreter = @import("../Interpreter.zig");
-const gas = Interpreter.gas;
+const gas = Interpreter.gass;
 const InstructionResult = Interpreter.InstructionResult;
 
 pub fn keccak256(int: *Interpreter) !void {

@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const Interpreter = @import("../Interpreter.zig");
-const gas = Interpreter.gas;
+const gas = Interpreter.gass;
 const InstructionResult = Interpreter.InstructionResult;
 const Opcode = @import("../opcode.zig").Opcode;
 const utils = @import("utils.zig");

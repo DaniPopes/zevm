@@ -286,11 +286,12 @@ pub const Opcode = enum(u8) {
 
     /// Maps each opcode to its name.
     pub const names: [256][]const u8 = init: {
+        @setEvalBranchQuota(100_000);
         var map: [256][]const u8 = undefined;
         for (0..256) |i| {
             map[i] = std.fmt.comptimePrint("UNKNOWN(0x{X:0>2})", .{i});
         }
-        for (@typeInfo(Opcode).Enum.fields) |variant| {
+        for (@typeInfo(Opcode).@"enum".fields) |variant| {
             map[variant.value] = variant.name;
         }
         break :init map;

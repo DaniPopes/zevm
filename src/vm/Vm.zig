@@ -142,7 +142,7 @@ pub const AccessStatus = enum(evmc.enum_evmc_access_status) {
 /// The allocator used within EVMC contexts.
 pub const evmc_allocator = std.heap.page_allocator;
 
-export fn evmc_create_zevm() callconv(.C) [*c]evmc.evmc_vm {
+export fn evmc_create_zevm() callconv(.c) [*c]evmc.evmc_vm {
     comptime std.debug.assert(@offsetOf(EvmcVm, "base") == 0);
     return @ptrCast(EvmcVm.create(evmc_allocator) catch null);
 }
@@ -178,13 +178,13 @@ pub const EvmcVm = struct {
         self.vm.deinit();
     }
 
-    fn destroy(vm_: [*c]evmc.evmc_vm) callconv(.C) void {
+    fn destroy(vm_: [*c]evmc.evmc_vm) callconv(.c) void {
         const vm = @as(*EvmcVm, @ptrCast(vm_));
         vm.deinit();
         vm.vm.allocator.destroy(vm);
     }
 
-    fn execute(vm_: [*c]evmc.evmc_vm, host_: [*c]const evmc.evmc_host_interface, context: ?*evmc.evmc_host_context, rev_: evmc.evmc_revision, msg: [*c]const evmc.evmc_message, code_: [*c]const u8, code_size: usize) callconv(.C) evmc.evmc_result {
+    fn execute(vm_: [*c]evmc.evmc_vm, host_: [*c]const evmc.evmc_host_interface, context: ?*evmc.evmc_host_context, rev_: evmc.evmc_revision, msg: [*c]const evmc.evmc_message, code_: [*c]const u8, code_size: usize) callconv(.c) evmc.evmc_result {
         const vm = @as(*EvmcVm, @ptrCast(vm_));
         const host = Host.init(context, host_);
         const rev = @as(Rev, @enumFromInt(rev_));
@@ -193,12 +193,12 @@ pub const EvmcVm = struct {
         return result.intoEvmc();
     }
 
-    fn get_capabilities(vm: [*c]evmc.evmc_vm) callconv(.C) evmc.evmc_capabilities_flagset {
+    fn get_capabilities(vm: [*c]evmc.evmc_vm) callconv(.c) evmc.evmc_capabilities_flagset {
         _ = vm;
         return evmc.EVMC_CAPABILITY_EVM1;
     }
 
-    fn set_option(vm: [*c]evmc.evmc_vm, name: [*c]const u8, value: [*c]const u8) callconv(.C) evmc.evmc_set_option_result {
+    fn set_option(vm: [*c]evmc.evmc_vm, name: [*c]const u8, value: [*c]const u8) callconv(.c) evmc.evmc_set_option_result {
         _ = vm;
         _ = name;
         _ = value;

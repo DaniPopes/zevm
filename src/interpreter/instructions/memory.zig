@@ -2,7 +2,7 @@ const std = @import("std");
 
 const Interpreter = @import("../Interpreter.zig");
 const utils = @import("utils.zig");
-const gas = Interpreter.gas;
+const gas = Interpreter.gass;
 const InstructionResult = Interpreter.InstructionResult;
 
 pub fn mload(int: *Interpreter) !void {

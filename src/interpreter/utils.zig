@@ -16,5 +16,5 @@ pub fn dumpSlice(slice: []const u8) void {
 }
 
 fn logSlice32(i: usize, slice: []const u8) void {
-    debug("0x{: >4}: 0x{:0>64}", .{ i, std.fmt.fmtSliceHexLower(slice) });
+    debug("0x{: >4}: 0x{x:0>64}", .{ i, slice });
 }

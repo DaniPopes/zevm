@@ -21,14 +21,17 @@ pub fn build(b: *std.Build) void {
     });
     const evmc_module = evmc.createModule();
 
-    const exe = b.addExecutable(.{
-        .name = name,
+    const main_module = b.addModule(name, .{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+        .strip = strip,
+    });
+    const exe = b.addExecutable(.{
+        .name = name,
+        .root_module = main_module,
         .use_lld = use_llvm,
         .use_llvm = use_llvm,
-        .strip = strip,
     });
     exe.root_module.addImport("evmc", evmc_module);
 
@@ -73,9 +76,7 @@ pub fn build(b: *std.Build) void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = main_module,
     });
     unit_tests.root_module.addImport("evmc", evmc_module);
 

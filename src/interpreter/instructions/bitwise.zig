@@ -3,7 +3,7 @@ const little_endian = @import("builtin").cpu.arch.endian() == .little;
 
 const Interpreter = @import("../Interpreter.zig");
 const utils = @import("utils.zig");
-const gas = Interpreter.gas;
+const gas = Interpreter.gass;
 const InstructionResult = Interpreter.InstructionResult;
 
 pub fn bitand(int: *Interpreter) !void {

@@ -31,7 +31,7 @@ pub fn intoEvmc(self: @This()) evmc.evmc_result {
     return result;
 }
 
-fn release(res: ?*const evmc.evmc_result) callconv(.C) void {
+fn release(res: ?*const evmc.evmc_result) callconv(.c) void {
     if (res) |r| {
         evmc_allocator.free(r.output_data[0..r.output_size]);
     }

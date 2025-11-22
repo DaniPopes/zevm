@@ -12,8 +12,8 @@ pub const InstructionResult = @import("result.zig").InstructionResult;
 pub const Memory = @import("Memory.zig");
 pub const Opcode = @import("opcode.zig").Opcode;
 pub const Stack = @import("Stack.zig");
-pub const gas = @import("gas.zig");
-pub const Gas = gas.Gas;
+pub const gass = @import("gas.zig");
+pub const Gas = gass.Gas;
 const Host = @import("../vm/Vm.zig").Host;
 const Rev = @import("../rev.zig").Rev;
 
@@ -116,8 +116,8 @@ pub fn step(self: *Self) !void {
         const opcode_ = @as(Opcode, @enumFromInt(opcode));
         const imm = opcode_.immSize();
         const zerox = if (imm == 0) "" else "0x";
-        const data = std.fmt.fmtSliceHexLower(self.ip[0..imm]);
-        debug("{: >4}: {s} {s}{}", .{ self.pc(), opcode_.name(), zerox, data });
+        const data = self.ip[0..imm];
+        debug("{: >4}: {s} {s}{x}", .{ self.pc(), opcode_.name(), zerox, data });
     }
     return instructions.TABLE[opcode](self);
 }
@@ -171,7 +171,7 @@ pub inline fn resizeMemory(self: *Self, offset: usize, len: usize) !void {
 }
 
 fn resizeMemoryCold(self: *Self, new_len: usize) !void {
-    @setCold(true);
+    @branchHint(.cold);
     const rounded_size = next32(new_len);
     // TODO: memory limit
     const num_words = rounded_size / 32;

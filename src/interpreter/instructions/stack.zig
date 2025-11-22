@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const Interpreter = @import("../Interpreter.zig");
-const gas = Interpreter.gas;
+const gas = Interpreter.gass;
 const Instruction = Interpreter.Instruction;
 const InstructionResult = Interpreter.InstructionResult;
 const utils = @import("utils.zig");
